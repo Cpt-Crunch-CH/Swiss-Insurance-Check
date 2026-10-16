@@ -1,6 +1,6 @@
 // Offline-Betrieb: App-Dateien und Bibliotheken werden im Gerät zwischengespeichert.
 // Deine Policen liegen nicht hier, sondern im Browser-Speicher des Geräts.
-const VERSION = "policen-v1";
+const VERSION = "policen-v2";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 // Nur diese Bibliotheks-Server cachen; die grossen KI-Modelle verwaltet WebLLM selbst
 const CDN = ["cdnjs.cloudflare.com", "cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];

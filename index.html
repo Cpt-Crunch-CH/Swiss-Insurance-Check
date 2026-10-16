@@ -128,6 +128,10 @@ section{display:grid;gap:14px}
 .lg{display:inline-block;width:12px;height:12px;border-radius:4px;margin-left:8px}
 .lg-multi{background:var(--warn-soft);border:1px solid var(--warn)}
 .lg-one{background:var(--ok-soft);border:1px solid var(--ok)}
+.lg-miss{background:var(--bad-soft);border:1px dashed var(--bad)}
+tr.miss th{color:var(--bad)}
+tr.miss td,tr.miss th{background:color-mix(in srgb,var(--bad-soft) 55%,var(--surface))}
+tr.miss td.gap{color:var(--bad);font-size:12.5px;font-weight:600}
 .chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;letter-spacing:.01em;background:var(--bg-2);color:var(--muted)}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
 .chip.bad{background:var(--bad-soft);color:var(--bad)}
@@ -155,7 +159,8 @@ tbody th{font-weight:600;white-space:nowrap;position:sticky;left:0;background:va
 thead th:first-child{position:sticky;left:0;background:var(--surface);z-index:2}
 td.hit .tick{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ok-soft);color:var(--ok);font-family:var(--f-body);font-weight:700;font-size:12px;margin-right:6px;vertical-align:middle}
 tr.multi td.hit .tick{background:var(--warn);color:var(--surface)}
-tr.multi th .chip{margin-left:6px}
+tbody th .chip{margin-left:6px}
+tr.miss td.gap a{color:inherit}
 tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
 tr.multi th{color:var(--warn)}
 td.hit{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -289,7 +294,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
 
   <section id="sec-matrix">
     <div class="sec-head"><h2>Deckungsmatrix</h2>
-      <span class="legend"><i class="lg lg-multi"></i>mehrfach versichert <i class="lg lg-one"></i>einmal versichert</span></div>
+      <span class="legend"><i class="lg lg-multi"></i>mehrfach versichert <i class="lg lg-one"></i>einmal versichert <i class="lg lg-miss"></i>fehlt</span></div>
     <div class="tablebox"><table id="matrix"></table></div>
   </section>
 
@@ -528,12 +533,14 @@ function render(){
   const multi = new Set(a.overlaps.map(o=>o.risiko));
   const risks = Object.keys(RISKS).filter(r => a.byRisk[r]).sort((x,y) => multi.has(y) - multi.has(x));
   const cnt = r => new Set(a.byRisk[r].map(h=>h.p.id)).size;
+  const missing = comp.slice(0,2).flatMap(t=>t.items).filter(x => !x.by.length && !x.off && !x.optional);
   $("#matrix").innerHTML = list.length ? `
     <thead><tr><th>Risiko</th>${list.map(p=>`<th title="${esc(p.anbieter+" · "+p.produkt)}">${esc(p.anbieter)}<br><span style="font-weight:400">${esc(p.produkt)}</span></th>`).join("")}</tr></thead>
     <tbody>${risks.map(r=>`<tr class="${multi.has(r)?"multi":""}"><th>${RISKS[r]}${multi.has(r)?`<span class="chip warn">${cnt(r)}×</span>`:""}</th>${list.map(p=>{
       const cs=(p.deckungen||[]).filter(c=>c.risiko===r);
       const c=cs.sort((x,y)=>(+y.summe||0)-(+x.summe||0))[0];
-      return c?`<td class="hit" title="${esc(c.leistung||"")}"><span class="tick" aria-label="versichert">✓</span>${c.summe?sumTxt(c.summe):""}</td>`:"<td></td>"}).join("")}</tr>`).join("")}</tbody>`
+      return c?`<td class="hit" title="${esc(c.leistung||"")}"><span class="tick" aria-label="versichert">✓</span>${c.summe?sumTxt(c.summe):""}</td>`:"<td></td>"}).join("")}</tr>`).join("")}
+    ${missing.map(x=>`<tr class="miss"><th>${esc(x.label)}<span class="chip bad">fehlt</span></th><td class="gap" colspan="${list.length}">Keine Police deckt das ab · <a href="#sec-comp">Warum wichtig?</a></td></tr>`).join("")}</tbody>`
     : "";
 
   // Policen
