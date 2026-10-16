@@ -1,0 +1,1376 @@
+<!doctype html>
+<html lang="de-CH">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Policen-Check (lokal)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#17695c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Policen-Check">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>try{const t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch{}</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<style>
+/* Layout: freundlicher Kopf (Begrüssung + Vollständigkeits-Ring), weiche Kacheln, darunter Abschnitte als Karten */
+:root{
+  --bg:#f3f7f5; --bg-2:#e6f0ec; --surface:#ffffff; --line:#d9e4df; --fg:#14231f; --muted:#5a6d67;
+  --accent:#17695c; --accent-ink:#ffffff; --accent-soft:#dcefe9; --sun:#f2b441; --sun-soft:#fdf1d6;
+  --warn:#9a5b00; --warn-soft:#fff1d9; --bad:#b3261e; --bad-soft:#fde8e6; --ok:#1f7a45; --ok-soft:#e0f4e8;
+  --shadow:0 1px 2px rgba(20,35,31,.05),0 8px 24px rgba(20,35,31,.06);
+  --f-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1614; --bg-2:#13211e; --surface:#172522; --line:#273833; --fg:#e6efec; --muted:#93a8a1;
+  --accent:#6fd6bf; --accent-ink:#06211b; --accent-soft:#1a3630; --sun:#f4c26b; --sun-soft:#3a2f17;
+  --warn:#f0b35a; --warn-soft:#352812; --bad:#f2867d; --bad-soft:#3a1d1b; --ok:#7fd39a; --ok-soft:#173226;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1614; --bg-2:#13211e; --surface:#172522; --line:#273833; --fg:#e6efec; --muted:#93a8a1;
+  --accent:#6fd6bf; --accent-ink:#06211b; --accent-soft:#1a3630; --sun:#f4c26b; --sun-soft:#3a2f17;
+  --warn:#f0b35a; --warn-soft:#352812; --bad:#f2867d; --bad-soft:#3a1d1b; --ok:#7fd39a; --ok-soft:#173226;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:15.5px/1.55 var(--f-body)}
+.wrap{max-width:1100px;margin:0 auto;padding-block:24px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;line-height:1.12}
+h1{font-size:clamp(30px,5.4vw,48px);font-weight:750;letter-spacing:-.02em}
+h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+h3{font-size:16.5px;font-weight:650}
+p{margin:0}
+.muted{color:var(--muted)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+/* Kopfleiste */
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+section,.hero{scroll-margin-top:84px}
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.nav-in{max-width:1100px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap}
+.nav-links{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:7px 12px;border-radius:99px;color:var(--muted);text-decoration:none;font-weight:600;font-size:14.5px}
+.nav-links a:hover{color:var(--fg);background:var(--bg-2)}
+.nav-links a.active{color:var(--accent);background:var(--accent-soft)}
+.nav-links a:focus-visible,.brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;font-size:12px;font-weight:700;background:var(--bg-2);color:var(--muted)}
+.nbadge.warn{background:var(--warn-soft);color:var(--warn)}
+.nbadge.bad{background:var(--bad-soft);color:var(--bad)}
+.nav-tools{display:flex;gap:8px;align-items:center}
+.nav-tools .primary{padding:7px 14px;font-size:14px}
+@media (max-width:720px){.nav-links{order:3;flex-basis:100%}.nav-tools{margin-left:auto}.nav-tools .primary{display:none}.brand span{font-size:16px}section,.hero{scroll-margin-top:124px}}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--fg);text-decoration:none}
+.brand svg{width:30px;height:30px}
+.theme-btn{display:inline-flex;align-items:center;gap:8px;border-radius:99px;padding:6px 14px 6px 10px;font-size:14px}
+.theme-btn svg{width:18px;height:18px}
+/* Begrüssung */
+.hero{background:linear-gradient(135deg,var(--accent-soft),var(--bg-2) 70%);border-radius:24px;padding:28px clamp(18px,4vw,40px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px 40px;align-items:center}
+.hero-text{display:grid;gap:12px;max-width:60ch}
+.hero-text p{font-size:17px;color:var(--muted)}
+.ring{--p:0;width:148px;height:148px;border-radius:50%;background:conic-gradient(var(--sun) calc(var(--p)*1%),var(--surface) 0);display:grid;place-items:center;box-shadow:var(--shadow)}
+.ring>div{width:112px;height:112px;border-radius:50%;background:var(--surface);display:grid;place-content:center;text-align:center;gap:0}
+.ring b{font-family:var(--f-display);font-size:28px;font-weight:750;line-height:1}
+.ring span{font-size:12px;color:var(--muted)}
+@media (max-width:640px){.hero{grid-template-columns:1fr}.ring{justify-self:start;width:120px;height:120px}.ring>div{width:90px;height:90px}.ring b{font-size:22px}}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;counter-reset:st}
+.step{background:var(--surface);border-radius:var(--r);padding:16px;display:grid;gap:4px;box-shadow:var(--shadow)}
+.step b{font-family:var(--f-display);font-size:16px}
+.step b::before{counter-increment:st;content:counter(st);display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--sun-soft);color:var(--fg);font-size:13px;margin-right:8px}
+.step span{font-size:14px;color:var(--muted)}
+/* Buttons */
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 16px;font-weight:600;transition:border-color .15s,transform .15s,background .15s}
+button:hover{border-color:var(--accent)}
+button:active{transform:translateY(1px)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,.btnlike:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.btnlike{display:inline-flex;align-items:center;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 16px;font-weight:600;font-size:15.5px}
+.btnlike:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 30%,transparent)}
+button.primary:hover{filter:brightness(1.07)}
+button.ghost{background:none;border-color:transparent;color:var(--accent);padding:4px 8px;font-weight:600}
+button.danger{color:var(--bad)}
+button:disabled{opacity:.55;cursor:wait}
+/* Kennzahlen */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:var(--surface);border-radius:var(--r);padding:14px 16px;display:grid;gap:2px;box-shadow:var(--shadow)}
+.stat b{font-family:var(--f-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat b.warn{color:var(--warn)}
+.ai-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:13.5px}
+.ai-model{display:flex;align-items:center;gap:6px}
+.ai-model select{width:auto;padding:3px 6px}
+.ai-row button:not(.ghost),.ai-row .btnlike{font-size:14px;padding:7px 14px}
+.banner{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:10px 14px;font-size:14px;color:var(--muted)}
+section{display:grid;gap:14px}
+.sec-head{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:baseline}
+.overlaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,500px),1fr));gap:14px}
+.ov{background:var(--surface);border-radius:var(--r);padding:18px;display:grid;gap:14px;align-content:start;min-width:0;box-shadow:var(--shadow);border:1px solid var(--warn-soft)}
+.ov.bad{border-color:var(--bad-soft)}
+.ov-head{display:flex;gap:12px;align-items:center}
+.ov-badge{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--warn-soft);color:var(--warn);font-family:var(--f-display);font-weight:750;font-size:20px}
+.ov.bad .ov-badge{background:var(--bad-soft);color:var(--bad)}
+.ov-head p{font-size:13.5px;color:var(--muted)}
+.ov-cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px}
+.ov-pol{background:var(--bg);border-radius:12px;padding:12px 14px;display:grid;gap:6px;align-content:start;font-size:13.5px;min-width:0}
+.ov-pol .who{font-weight:700;font-size:15px}
+.ov-pol .what{color:var(--muted)}
+.ov-pol dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:4px 0 0}
+.ov-pol dt{color:var(--muted)}
+.ov-pol dd{margin:0;text-align:right;white-space:nowrap;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.ov .hint{font-size:13.5px;background:var(--sun-soft);border-radius:10px;padding:10px 12px}
+.ov .hint b{font-weight:700}
+.legend{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.lg{display:inline-block;width:12px;height:12px;border-radius:4px;margin-left:8px}
+.lg-multi{background:var(--warn-soft);border:1px solid var(--warn)}
+.lg-one{background:var(--ok-soft);border:1px solid var(--ok)}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;letter-spacing:.01em;background:var(--bg-2);color:var(--muted)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.ex{background:var(--accent-soft);color:var(--accent)}
+.comp{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:18px 20px;align-items:start}
+.tier{display:grid;gap:8px}
+.tier h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-family:var(--f-body);font-weight:700}
+.crow{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:4px 14px;align-items:center;background:var(--surface);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}
+.crow .what{display:grid;gap:2px;min-width:0}
+.crow .what strong{font-weight:650}
+.crow .what span{font-size:13px;color:var(--muted)}
+.crow.off{opacity:.55;box-shadow:none;background:transparent;border:1px dashed var(--line)}
+@media (max-width:560px){.crow{grid-template-columns:1fr auto}.crow .st{grid-column:1/-1}}
+.prog{display:grid;gap:8px}
+.prog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px}
+.bar{height:10px;border-radius:99px;background:var(--accent-soft);overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--sun));border-radius:99px;transition:width .3s ease}
+.empty{padding:18px;border:1px dashed var(--line);border-radius:var(--r);color:var(--muted);background:var(--surface)}
+.tablebox{overflow-x:auto;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+thead th{font-weight:700;font-size:12.5px;color:var(--muted);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+tbody th{font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--surface);z-index:1}
+thead th:first-child{position:sticky;left:0;background:var(--surface);z-index:2}
+td.hit .tick{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ok-soft);color:var(--ok);font-family:var(--f-body);font-weight:700;font-size:12px;margin-right:6px;vertical-align:middle}
+tr.multi td.hit .tick{background:var(--warn);color:var(--surface)}
+tr.multi th .chip{margin-left:6px}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+tr.multi th{color:var(--warn)}
+td.hit{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.multi td,tr.multi th{background:color-mix(in srgb,var(--warn-soft) 55%,var(--surface))}
+tr.multi td.hit{background:var(--warn-soft)}
+.policies{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.pol{background:var(--surface);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0;box-shadow:var(--shadow)}
+.pol .pol-actions{margin-top:auto}
+.pol-top{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.pol-top>div{min-width:0}
+.pol dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:13.5px;background:var(--bg);border-radius:10px;padding:10px 12px}
+.pol dt{color:var(--muted)}
+.pol dd{margin:0;text-align:right}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:12px;background:var(--bg-2);border-radius:99px;padding:2px 9px;color:var(--muted)}
+.pol-tree summary{cursor:pointer;font-size:14px;color:var(--accent);font-weight:600}
+.tree{list-style:none;margin:4px 0 0;padding:0 0 0 16px;display:grid;gap:3px;font-size:13px}
+.pol-tree>.tree{padding-left:0;border-left:0}
+.tree li{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.tree li span:first-child{min-width:0;flex:1}
+.tree li .val{flex:0 1 auto;max-width:45%;text-align:right;color:var(--muted);font-size:12.5px}
+.tree li .val .num{color:var(--fg)}
+.tree li.tgrp{display:block;margin-top:4px}
+.tree li.tgrp>strong{font-weight:650;font-size:13px}
+.tree .tprem{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.pol.off{opacity:.6}
+.vnote{font-size:13px;border-radius:10px;padding:8px 10px;background:var(--bg-2);color:var(--muted)}
+.vnote.bad{background:var(--bad-soft);color:var(--bad)}
+.vnote.warn{background:var(--warn-soft);color:var(--warn)}
+.vnote.ex{background:var(--accent-soft);color:var(--accent)}
+.pol-actions{display:flex;gap:4px;justify-content:flex-end}
+/* Dialoge */
+dialog{border:none;border-radius:20px;padding:0;background:var(--surface);color:var(--fg);width:min(1280px,calc(100vw - 32px));max-height:calc(100vh - 32px);box-shadow:0 24px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(8,20,17,.55);backdrop-filter:blur(2px)}
+.dlg{display:grid;gap:16px;padding:22px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+input,select{font:inherit;font-weight:400;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%;box-sizing:border-box}
+.cov{display:grid;grid-template-columns:auto minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr) auto;gap:8px;align-items:end;padding:10px 12px;border-radius:12px;background:var(--bg)}
+.cov input,.cov select{background:var(--surface)}
+.cov.dragging{opacity:.4}
+.handle{cursor:grab;color:var(--muted);padding:8px 2px;user-select:none;align-self:end}
+.grp{display:grid;gap:8px}
+.grp .grp{border-left:2px solid var(--accent-soft);padding-left:14px;margin-left:4px}
+.ghead{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.ghead input.gname{flex:1 1 220px;width:auto;font-family:var(--f-display);font-weight:650;font-size:16px;background:transparent;border-color:transparent;padding:4px 6px}
+.ghead input.gname:hover,.ghead input.gname:focus{border-color:var(--line);background:var(--surface)}
+.gprem{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600;white-space:nowrap}
+.gprem input{width:110px;padding:5px 8px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.gbody{display:grid;gap:8px;min-height:10px;border-radius:12px}
+.gbody.drop-ok{outline:2px dashed var(--accent);outline-offset:3px}
+@media (max-width:640px){.cov{grid-template-columns:auto 1fr 1fr}.cov .c-bez{grid-column:2/-1}}
+.covs{display:grid;gap:10px}
+.dlg-foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);padding-block:12px 0;border-top:1px solid var(--line)}
+.status{font-size:14px;padding:10px 12px;border-radius:12px;background:var(--accent-soft)}
+.status.err{background:var(--bad-soft);color:var(--bad)}
+.drop{border:2px dashed var(--line);border-radius:16px;padding:28px;text-align:center;display:grid;gap:8px;justify-items:center;background:var(--bg)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<nav class="nav" aria-label="Hauptnavigation">
+  <div class="nav-in">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5 4.5 7v8.2c0 7 4.9 12.2 11.5 14.3 6.6-2.1 11.5-7.3 11.5-14.3V7Z" fill="var(--accent)"/><path d="m10.5 16.2 3.8 3.8 7.4-7.6" fill="none" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Policen-Check</span>
+    </a>
+    <div class="nav-links">
+      <a href="#top" data-nav="top">Übersicht</a>
+      <a href="#sec-ov" data-nav="sec-ov">Doppelt <span class="nbadge warn" id="navOv" hidden></span></a>
+      <a href="#sec-matrix" data-nav="sec-matrix">Matrix</a>
+      <a href="#sec-comp" data-nav="sec-comp">Vollständigkeit <span class="nbadge bad" id="navComp" hidden></span></a>
+      <a href="#sec-pol" data-nav="sec-pol">Policen <span class="nbadge" id="navPol" hidden></span></a>
+    </div>
+    <div class="nav-tools">
+      <button id="navImport" class="primary" type="button">PDF importieren</button>
+      <button id="themeBtn" class="theme-btn" type="button" aria-label="Darstellung wechseln"></button>
+    </div>
+  </div>
+</nav>
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <div class="hero-text">
+      <p class="eyebrow">Versicherungen · Krankenkasse · Bank</p>
+      <h1 id="heroTitle">Grüezi! Wie gut bist du versichert?</h1>
+      <p>Lade deine Policen als PDF. Der Check zeigt dir, was fehlt, was doppelt ist und bis wann du kündigen kannst. Alles bleibt auf deinem Gerät.</p>
+      <div class="actions">
+        <button id="btnImport" class="primary" type="button">PDF importieren</button>
+        <button id="btnManual" type="button">Manuell erfassen</button>
+      </div>
+    </div>
+    <div class="ring" id="ring" role="img" aria-label="Vollständigkeit"><div><b id="ringPct">–</b><span>vollständig</span></div></div>
+  </header>
+
+  <div id="welcome" class="steps" hidden>
+    <div class="step"><b>PDF hineinziehen</b><span>Police, Versicherungsausweis oder Kartenbedingungen.</span></div>
+    <div class="step"><b>Kurz prüfen</b><span>Die lokale KI füllt alles aus, du korrigierst, was nicht stimmt.</span></div>
+    <div class="step"><b>Überblick haben</b><span>Lücken, Doppeldeckungen und Kündigungstermine auf einen Blick.</span></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="eyebrow">Policen</span><b id="stCount">0</b></div>
+    <div class="stat"><span class="eyebrow">Prämien pro Jahr</span><b id="stSum">CHF 0</b></div>
+    <div class="stat"><span class="eyebrow">Überschneidungen</span><b id="stOv">0</b></div>
+    <div class="stat"><span class="eyebrow">Nächste Kündigungsfrist</span><b id="stNext" style="font-size:19px">–</b></div>
+  </div>
+
+  <div class="ai-row"><span id="aiChip" class="chip">Lokale KI: wird gesucht …</span>
+    <label class="ai-model" hidden id="aiModelWrap">Modell <select id="aiModel"></select></label>
+    <span class="ai-model" hidden id="webWrap">
+      <select id="webModel" aria-label="Modell für die Handy-KI">
+        <option value="Qwen3-1.7B-q4f16_1-MLC">Schnell · ca. 1 GB</option>
+        <option value="Qwen3-4B-q4f16_1-MLC">Genauer · ca. 2.3 GB</option>
+      </select>
+      <button type="button" id="webLoad">Handy-KI laden</button>
+    </span>
+    <button class="ghost" type="button" id="aiRetry">Erneut verbinden</button>
+    <span id="learned" class="muted"></span>
+    <span style="flex:1"></span>
+    <button id="btnExport" type="button">Sichern</button>
+    <label class="btnlike">Wiederherstellen<input id="restoreIn" type="file" accept="application/json" hidden></label>
+  </div>
+  <div id="banner" class="banner" hidden></div>
+
+  <section id="sec-ov">
+    <div class="sec-head"><h2>Doppelt versichert?</h2><span id="ovSub" class="muted" style="font-size:13px"></span></div>
+    <div id="overlaps" class="overlaps"></div>
+  </section>
+
+  <section id="sec-matrix">
+    <div class="sec-head"><h2>Deckungsmatrix</h2>
+      <span class="legend"><i class="lg lg-multi"></i>mehrfach versichert <i class="lg lg-one"></i>einmal versichert</span></div>
+    <div class="tablebox"><table id="matrix"></table></div>
+  </section>
+
+  <section id="sec-comp">
+    <div class="sec-head"><h2>Vollständigkeit</h2><span id="compScore" class="muted" style="font-size:13px"></span></div>
+    <div id="completeness" class="comp"></div>
+  </section>
+
+
+  <section id="sec-pol">
+    <div class="sec-head"><h2>Deine Policen</h2><span id="validSum" class="muted" style="font-size:13px"></span></div>
+    <div id="policies" class="policies"></div>
+  </section>
+
+  <footer>Der Check vergleicht nur, was in den Policen erfasst ist. Bedingungen im Kleingedruckten (z. B. Kreditkarten-Reiseschutz nur bei Zahlung mit der Karte) können abweichen. Keine Versicherungsberatung.</footer>
+</div>
+
+<!-- Import -->
+<dialog id="dlgImport" style="width:min(900px,calc(100vw - 32px))">
+  <div class="dlg">
+    <div class="sec-head"><h2>Police importieren</h2><button class="ghost" type="button" data-close>Schliessen</button></div>
+    <div id="drop" class="drop">
+      <p><strong>PDF hierher ziehen</strong> oder</p>
+      <label style="display:inline-block"><input id="fileIn" type="file" accept="application/pdf" hidden><span class="primary" style="display:inline-block;background:var(--accent);color:var(--accent-ink);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500">Datei wählen</span></label>
+      <p class="muted" style="font-size:13px">Police, Versicherungsausweis oder Kartenbedingungen. Das PDF wird nur hier im Browser gelesen. Mit lokaler KI (Ollama) werden alle Werte ausgelesen, sonst nur Deckungsarten per Stichwortsuche.</p>
+    </div>
+    <div id="prog" class="prog" hidden>
+      <div class="prog-head"><span id="progTxt">PDF wird gelesen …</span><span id="progPct" class="num">0 %</span></div>
+      <div class="bar" role="progressbar" aria-labelledby="progTxt" aria-valuemin="0" aria-valuemax="100"><span id="progBar"></span></div>
+      <div class="prog-head"><span id="progTime" class="muted num">0 s</span><button class="ghost danger" type="button" id="progStop">Abbrechen</button></div>
+    </div>
+    <div id="impStatus" class="status" hidden></div>
+  </div>
+</dialog>
+
+<!-- Bearbeiten / Prüfen -->
+<dialog id="dlgEdit">
+  <form id="editForm" class="dlg" novalidate>
+    <div class="sec-head"><h2 id="editTitle">Police erfassen</h2><button class="ghost" type="button" data-close>Abbrechen</button></div>
+    <div id="editNote" class="status" hidden></div>
+    <details id="pdfHints" hidden><summary class="muted" style="cursor:pointer;font-size:13px">Gefundene Textstellen mit Zahlen anzeigen</summary><pre style="white-space:pre-wrap;font:12px/1.5 var(--f-mono);background:var(--bg);padding:10px;border-radius:5px;max-height:45vh;overflow:auto;margin:6px 0 0"></pre></details>
+    <div class="grid2">
+      <label>Anbieter<input id="fAnbieter" required placeholder="z. B. Versicherung A"></label>
+      <label>Produkt<input id="fProdukt" placeholder="z. B. Hausrat & Privathaftpflicht"></label>
+      <label>Art
+        <select id="fQuelle">
+          <option>Versicherung</option><option>Krankenkasse</option><option>Bank / Kreditkarte</option><option>Arbeitgeber</option><option>Andere</option>
+        </select>
+      </label>
+      <label>Prämie pro Jahr (CHF)<input id="fPraemie" type="number" min="0" step="0.05" inputmode="decimal"></label>
+      <label>Police vom<input id="fAusgestellt" type="date"></label>
+      <label>Gültig ab<input id="fBeginn" type="date"></label>
+      <label>Vertragsablauf<input id="fAblauf" type="date"></label>
+      <label>Kündigungsfrist (Monate)<input id="fFrist" type="number" min="0" max="24" step="1"></label>
+    </div>
+    <div class="sec-head"><h3>Deckungen</h3>
+      <div class="actions"><select id="tplSel" aria-label="Vorlage einfügen" style="width:auto"><option value="">Vorlage einfügen …</option><option value="hausrat">Hausrat (Gefahren + Sachen)</option><option value="service">Serviceleistungen (Helvetia)</option><option value="haftpflicht">Privathaftpflicht (Helvetia)</option><option value="assistance">Assistance (Helvetia)</option><option value="rechtsschutz">Rechtsschutz (Helvetia)</option><option value="auto">Motorfahrzeug (Zürich)</option></select><button class="ghost" type="button" id="addGrp">+ Kategorie</button><button class="ghost" type="button" id="addCov">+ Leistung</button></div></div>
+    <div id="covs" class="covs"></div>
+    <p class="muted" style="font-size:12.5px">Leistungen mit ⋮⋮ in eine andere Kategorie ziehen. Kategorienamen direkt anklicken zum Umbenennen.</p>
+    <div class="dlg-foot">
+      <button type="button" data-close>Abbrechen</button>
+      <button class="primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const RISKS = {
+  krankheit:"Krankheit (Grundversicherung)", unfall:"Unfall (Heilungskosten)", insassen:"Insassenunfall (Auto)", spital:"Spital-Zusatz",
+  ambulant:"Ambulante Zusatzleistungen", ausland:"Heilungskosten Ausland", erwerb:"Taggeld / Erwerbsunfähigkeit",
+  leben:"Todesfall / Leben", haftpflicht:"Privathaftpflicht", hausrat:"Hausrat", diebstahl:"Diebstahl auswärts",
+  glas:"Glasbruch", geraete:"Geräte / Handy", annullierung:"Annullierungskosten", assistance:"Reise-Assistance / Rücktransport",
+  gepaeck:"Reisegepäck", rechtsschutz:"Rechtsschutz", fahrzeug:"Motorfahrzeug", pannenhilfe:"Pannenhilfe / Fahrzeug-Assistance", cyber:"Cyber / Internet", andere:"Andere"
+};
+const HINTS = {
+  insassen:"Eine Insassenunfallversicherung im Auto doppelt sich oft mit UVG und Krankenkasse. Sie lohnt sich vor allem, wenn häufig Mitfahrer ohne eigene Unfalldeckung dabei sind.",
+  unfall:"Wer mindestens 8 h/Woche beim selben Arbeitgeber arbeitet, ist über diesen (UVG) auch in der Freizeit unfallversichert. Die Unfalldeckung der Krankenkasse lässt sich dann sistieren.",
+  krankheit:"In der Grundversicherung ist nur eine Krankenkasse zulässig. Prüfe das umgehend.",
+  annullierung:"Kreditkarten decken Reisen oft nur, wenn sie mit der Karte bezahlt wurden. Prüfe die Bedingungen, bevor du kündigst.",
+  assistance:"Häufig in Kreditkarte, Zusatzversicherung und TCS-Schutzbrief gleichzeitig enthalten.",
+  ausland:"Krankenkassen-Zusatz, Reiseversicherung und Kreditkarte decken das oft dreifach ab.",
+  pannenhilfe:"TCS-Mitgliedschaft, Autoversicherung und manche Kreditkarten enthalten oft schon Pannenhilfe. Meist reicht eine davon.",
+  haftpflicht:"Bei Doppelversicherung teilen sich die Versicherer den Schaden. Eine Police reicht."
+};
+// Vollständigkeits-Check: was in der Schweiz typischerweise nötig oder sinnvoll ist
+const CHECKLIST = [
+  {tier:"Obligatorisch", items:[
+    {id:"krankheit", any:["krankheit"], why:"Grundversicherung nach KVG ist für alle in der Schweiz Pflicht."},
+    {id:"unfall", any:["unfall"], why:"Pflicht: über den Arbeitgeber (UVG, ab 8 h/Woche auch Freizeit) oder über die Krankenkasse."},
+    {id:"fahrzeug", any:["fahrzeug"], why:"Haftpflicht ist Pflicht, sobald du ein Auto oder Motorrad hast.", optional:true}]},
+  {tier:"Dringend empfohlen", items:[
+    {id:"haftpflicht", any:["haftpflicht"], why:"Schützt vor Schadenersatz an Dritte, oft in der Mietwohnung vom Vermieter verlangt."},
+    {id:"hausrat", any:["hausrat"], why:"Deckt Feuer, Wasser und Einbruch bei deinem Hab und Gut."}]},
+  {tier:"Empfohlen", items:[
+    {id:"rechtsschutz", any:["rechtsschutz"], why:"Hilfreich bei Streit mit Vermieter, Arbeitgeber oder Händlern."},
+    {id:"reise", label:"Reiseschutz", any:["assistance","ausland","annullierung"], why:"Rücktransport, Heilungskosten im Ausland, Annullierung. Oft schon in Kreditkarte oder Zusatzversicherung enthalten."},
+    {id:"erwerb", any:["erwerb"], why:"Krankentaggeld bei längerer Krankheit. Meist über den Arbeitgeber, prüfe deinen Arbeitsvertrag."},
+    {id:"diebstahl", any:["diebstahl"], why:"Ergänzung zur Hausrat für Diebstahl unterwegs, z. B. Velo oder Laptop."}]},
+  {tier:"Je nach Situation", items:[
+    {id:"spital", any:["spital"], why:"Halbprivat/privat im Spital, freie Spitalwahl."},
+    {id:"ambulant", any:["ambulant"], why:"Brille, Komplementärmedizin, Zahnkorrekturen usw."},
+    {id:"leben", any:["leben"], why:"Sinnvoll mit Familie oder Hypothek."},
+    {id:"glas", any:["glas"], why:"Glaskeramik-Kochfeld, grosse Fenster. Bei Mietwohnungen oft schon über den Vermieter."},
+    {id:"geraete", any:["geraete"], why:"Meist teuer im Verhältnis zur Leistung."}]}
+];
+let skipped = [];
+try{ skipped = JSON.parse(localStorage.getItem("skipped")||"[]"); }catch{}
+
+function completeness(byRisk){
+  return CHECKLIST.map(t => ({tier:t.tier, items:t.items.map(it => ({...it,
+    label: it.label || RISKS[it.id],
+    by: [...new Set(it.any.flatMap(r => (byRisk[r]||[]).map(h => h.p.anbieter)))],
+    off: skipped.includes(it.id)}))}));
+}
+const DEFAULT_HINT = "Im Schadenfall wird nur einmal bezahlt. Vergleiche Summe und Selbstbehalt und behalte die bessere Deckung.";
+
+
+let mine = [];          // eigene Policen
+let store = null;       // {save(p), remove(id)}
+const $ = s => document.querySelector(s);
+// Rappen nur zeigen, wenn es welche gibt (CHF 13.50, aber CHF 60'000)
+const chf = n => { const v = Math.round((+n||0)*100)/100; return "CHF " + v.toLocaleString("de-CH", v % 1 ? {minimumFractionDigits:2, maximumFractionDigits:2} : {maximumFractionDigits:0}); };
+const sumTxt = n => n ? Math.round(n).toLocaleString("de-CH") : "✓";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const view = () => mine;
+
+// Gültigkeit einer Police: noch nicht begonnen, gültig, läuft bald ab, Ablauf vorbei, Dokument veraltet
+const dayMs = 864e5, isoDay = v => v ? new Date(v + "T00:00:00") : null;
+function validity(p, all = []){
+  const now = new Date(), beg = isoDay(p.beginn), end = isoDay(p.ablauf), doc = isoDay(p.ausgestellt);
+  const newer = all.some(q => q !== p && flat(q.anbieter) === flat(p.anbieter) && flat(q.produkt) === flat(p.produkt) && (q.ablauf||"") > (p.ablauf||""));
+  if(end && end < now) return newer
+    ? {cls:"", label:"ersetzt", text:"Abgelaufen, eine neuere Police ist erfasst. Diese zählt nicht mehr im Check.", old:true}
+    : {cls:"bad", label:"Ablauf vorbei", text:`Abgelaufen am ${end.toLocaleDateString("de-CH")}. Läuft sie stillschweigend weiter, importiere die aktuelle Police. Sonst löschen.`};
+  if(beg && beg > now) return {cls:"ex", label:"beginnt bald", text:`Gültig ab ${beg.toLocaleDateString("de-CH")}.`};
+  if(end && (end - now) / dayMs <= 90) return {cls:"warn", label:"läuft bald ab", text:`Läuft am ${end.toLocaleDateString("de-CH")} ab.`};
+  if(doc && (now - doc) / dayMs > 450) return {cls:"warn", label:"Dokument alt", text:`Police vom ${doc.toLocaleDateString("de-CH")}. Prämien und Leistungen könnten sich seither geändert haben.`};
+  if(!end && !beg && !doc) return {cls:"", label:"Datum fehlt", text:"Trag Gültig ab und Vertragsablauf ein, dann prüft der Check die Gültigkeit."};
+  return {cls:"ok", label:"gültig", text:""};
+}
+function deadline(p){
+  if(!p.ablauf) return null;
+  const d = new Date(p.ablauf + "T00:00:00");
+  if(isNaN(d)) return null;
+  d.setMonth(d.getMonth() - (+p.frist||0));
+  return d;
+}
+
+// Kern: Risiken mit Deckung aus mehr als einer Police
+function analyze(list){
+  const byRisk = {};
+  for(const p of list) for(const c of p.deckungen||[]){
+    if(!RISKS[c.risiko] || c.risiko==="andere") continue;
+    (byRisk[c.risiko] ||= []).push({p, c});
+  }
+  const overlaps = Object.entries(byRisk)
+    .filter(([,hits]) => new Set(hits.map(h=>h.p.id)).size > 1)
+    .map(([risiko,hits]) => ({risiko, hits, severe: risiko==="krankheit"}));
+  return {byRisk, overlaps};
+}
+console.assert(completeness({hausrat:[{p:{anbieter:"X"}}]})[1].items[1].by[0]==="X", "completeness()");
+console.assert(analyze([{id:"a",deckungen:[{risiko:"unfall"}]},{id:"b",deckungen:[{risiko:"unfall"}]}]).overlaps.length===1, "analyze()");
+
+function render(){
+  const all = view(), list = all.filter(p => !validity(p, all).old), a = analyze(list);
+  const total = list.reduce((s,p)=>s+(+p.praemie||0),0);
+  $("#stCount").textContent = list.length;
+  $("#stSum").textContent = chf(total);
+  $("#stOv").textContent = a.overlaps.length;
+  $("#stOv").className = a.overlaps.length ? "warn" : "";
+  const now = new Date();
+  const next = list.map(p=>({p,d:deadline(p)})).filter(x=>x.d && x.d>=now).sort((x,y)=>x.d-y.d)[0];
+  $("#stNext").textContent = next ? next.d.toLocaleDateString("de-CH") + " · " + next.p.anbieter : "–";
+
+  const b = $("#banner");
+  b.hidden = false;
+  b.innerHTML = `<span>Deine Daten liegen nur in diesem Browser auf diesem Gerät. Mit «Sichern» erstellst du eine Backup-Datei.</span>`;
+
+  // Überschneidungen + Lücken
+  // Pro beteiligter Police: welche Leistungen, Summe/SB, Kündigungstermin und Prämie der betroffenen Kategorie
+  const perPolicy = hits => [...new Map(hits.map(h=>[h.p.id,h.p])).values()].map(p => {
+    const cs = hits.filter(h=>h.p===p).map(h=>h.c);
+    const max = Math.max(0, ...cs.map(c=>+c.summe||0));
+    const sbs = cs.map(c=>c.sb).filter(v=>v!=null&&v!=="");
+    const tops = [...new Set(cs.map(c=>(c.kategorie||"").split(" › ")[0]).filter(Boolean))];
+    const prem = tops.reduce((sum,t) => sum + (+Object.entries(p.kategoriePraemien||{}).find(([n]) => segKey(n)===segKey(t))?.[1] || 0), 0);
+    return {p, names:[...new Set(cs.map(c=>c.bezeichnung).filter(Boolean))], max, sb: sbs.length ? Math.min(...sbs) : null,
+            leistung: cs.find(c=>c.leistung)?.leistung, dl: deadline(p), prem, tops};
+  });
+  const times = n => n===2 ? "doppelt" : n===3 ? "dreifach" : n+"-fach";
+  const ov = a.overlaps.map(o => { const pp = perPolicy(o.hits); return `
+    <article class="ov ${o.severe?"bad":""}" id="ov-${o.risiko}">
+      <div class="ov-head"><div class="ov-badge">${pp.length}×</div>
+        <div><h3>${RISKS[o.risiko]}</h3><p>${times(pp.length)} versichert bei ${pp.map(x=>esc(x.p.anbieter)).join(" und ")}</p></div></div>
+      <div class="ov-cmp">${pp.map(x => `
+        <div class="ov-pol">
+          <span class="who">${esc(x.p.anbieter)}</span>
+          <span class="what">${esc(x.p.produkt||x.p.quelle)}${x.names.length ? " · " + x.names.slice(0,3).map(esc).join(", ") + (x.names.length>3 ? " …" : "") : ""}</span>
+          <dl>
+            ${x.max ? `<dt>Summe</dt><dd>${chf(x.max)}</dd>` : x.leistung ? `<dt>Leistung</dt><dd style="font-family:inherit">${esc(x.leistung)}</dd>` : ""}
+            ${x.sb!=null ? `<dt>Selbstbehalt</dt><dd>${chf(x.sb)}</dd>` : ""}
+            ${x.prem ? `<dt>Prämie ${esc(x.tops.join(", "))}</dt><dd>${chf(x.prem)}/J.</dd>` : ""}
+            <dt>Kündbar bis</dt><dd>${x.dl ? x.dl.toLocaleDateString("de-CH") : "–"}</dd>
+          </dl>
+        </div>`).join("")}
+      </div>
+      <p class="hint"><b>Tipp:</b> ${HINTS[o.risiko]||DEFAULT_HINT}</p>
+    </article>`; }).join("");
+  $("#ovSub").textContent = !list.length ? "" : a.overlaps.length
+    ? `${a.overlaps.length} Risik${a.overlaps.length>1?"en":"o"} mehrfach versichert · hier kannst du sparen`
+    : "Jedes Risiko ist nur einmal versichert";
+  const comp = completeness(a.byRisk);
+  const req = comp.slice(0,2).flatMap(t=>t.items).filter(x=>!x.off && !x.optional);
+  const okN = req.filter(x=>x.by.length).length, pct = req.length ? Math.round(okN/req.length*100) : 0;
+  $("#compScore").textContent = `${okN} von ${req.length} wichtigen Versicherungen erfasst`;
+  $("#ring").style.setProperty("--p", list.length ? pct : 0);
+  $("#ringPct").textContent = list.length ? pct + " %" : "–";
+  $("#ring").setAttribute("aria-label", `Vollständigkeit ${list.length ? pct + " Prozent" : "noch offen"}`);
+  $("#welcome").hidden = list.length > 0;
+  $("#heroTitle").textContent = !list.length ? "Grüezi! Wie gut bist du versichert?"
+    : pct === 100 && !a.overlaps.length ? "Sieht gut aus. Alles Wichtige ist einmal gedeckt."
+    : a.overlaps.length ? `${a.overlaps.length} Überschneidung${a.overlaps.length>1?"en":""} gefunden. Hier kannst du sparen.`
+    : "Fast komplett. Schau dir die offenen Punkte an.";
+  $("#completeness").innerHTML = comp.map((t,ti) => `
+    <div class="tier"><h3>${t.tier}</h3>${t.items.map(x => {
+      const st = x.off ? '<span class="chip">nicht relevant</span>'
+        : x.by.length ? '<span class="chip ok">vorhanden</span>'
+        : (ti<2 && !x.optional) ? '<span class="chip bad">fehlt</span>' : '<span class="chip warn">prüfen</span>';
+      return `<div class="crow ${x.off?"off":""}"><div class="st">${st}</div>
+        <div class="what"><strong>${x.label}</strong><span>${x.by.length ? esc(x.by.join(", ")) : x.why}</span></div>
+        ${x.by.length ? "<span></span>" : `<button class="ghost" type="button" data-skip="${x.id}">${x.off?"Doch prüfen":"Brauche ich nicht"}</button>`}</div>`;
+    }).join("")}</div>`).join("");
+  $("#overlaps").innerHTML = !list.length ? `<p class="empty">Noch keine Policen erfasst. Importiere ein PDF oder erfasse eine Police manuell.</p>` : ov || `<p class="empty"><span class="chip ok">Alles gut</span> Keine Überschneidungen gefunden. Jedes Risiko ist nur einmal versichert.</p>`;
+
+  // Matrix
+  const multi = new Set(a.overlaps.map(o=>o.risiko));
+  const risks = Object.keys(RISKS).filter(r => a.byRisk[r]).sort((x,y) => multi.has(y) - multi.has(x));
+  const cnt = r => new Set(a.byRisk[r].map(h=>h.p.id)).size;
+  $("#matrix").innerHTML = list.length ? `
+    <thead><tr><th>Risiko</th>${list.map(p=>`<th title="${esc(p.anbieter+" · "+p.produkt)}">${esc(p.anbieter)}<br><span style="font-weight:400">${esc(p.produkt)}</span></th>`).join("")}</tr></thead>
+    <tbody>${risks.map(r=>`<tr class="${multi.has(r)?"multi":""}"><th>${RISKS[r]}${multi.has(r)?`<span class="chip warn">${cnt(r)}×</span>`:""}</th>${list.map(p=>{
+      const cs=(p.deckungen||[]).filter(c=>c.risiko===r);
+      const c=cs.sort((x,y)=>(+y.summe||0)-(+x.summe||0))[0];
+      return c?`<td class="hit" title="${esc(c.leistung||"")}"><span class="tick" aria-label="versichert">✓</span>${c.summe?sumTxt(c.summe):""}</td>`:"<td></td>"}).join("")}</tr>`).join("")}</tbody>`
+    : "";
+
+  // Policen
+  const vs = all.map(p => validity(p, all));
+  const attention = vs.filter(v => ["bad","warn"].includes(v.cls)).length;
+  const setBadge = (id, n) => { const el = $(id); el.hidden = !n; el.textContent = n || ""; };
+  setBadge("#navOv", a.overlaps.length);
+  setBadge("#navComp", list.length ? req.length - okN : 0);
+  setBadge("#navPol", attention);
+  $("#validSum").textContent = !all.length ? "" : attention ? `${attention} Police${attention>1?"n":""} prüfen (Gültigkeit)` : "Alle Policen gültig";
+  $("#policies").innerHTML = all.map(p => {
+    const d = deadline(p), v = validity(p, all);
+    return `<article class="pol ${v.old ? "off" : ""}">
+      <div class="pol-top"><div><p class="eyebrow">${esc(p.quelle)}</p><h3>${esc(p.anbieter)}</h3><p class="muted" style="font-size:14px">${esc(p.produkt)}</p></div>
+      <span class="chip ${v.cls}">${v.label}</span></div>
+      ${v.text ? `<p class="vnote ${v.cls}">${esc(v.text)}</p>` : ""}
+      <dl>
+        <dt>Prämie / Jahr</dt><dd class="num">${p.praemie?chf(p.praemie):"–"}</dd>
+        <dt>Police vom</dt><dd class="num">${p.ausgestellt?isoDay(p.ausgestellt).toLocaleDateString("de-CH"):"–"}</dd>
+        <dt>Gültig ab</dt><dd class="num">${p.beginn?isoDay(p.beginn).toLocaleDateString("de-CH"):"–"}</dd>
+        <dt>Ablauf</dt><dd class="num">${p.ablauf?new Date(p.ablauf+"T00:00:00").toLocaleDateString("de-CH"):"–"}</dd>
+        <dt>Kündigen bis</dt><dd class="num">${d?d.toLocaleDateString("de-CH"):"–"}</dd>
+      </dl>
+      ${(p.deckungen||[]).some(c=>c.kategorie||c.bezeichnung)
+        ? `<details class="pol-tree"><summary>${(p.deckungen||[]).length} Leistungen</summary>${tree(p.deckungen, p.kategoriePraemien)}</details>`
+        : `<div class="tags">${(p.deckungen||[]).map(c=>`<span class="tag">${RISKS[c.risiko]||esc(c.risiko)}</span>`).join("")}</div>`}
+      ${`<div class="pol-actions"><button class="ghost" type="button" data-edit="${esc(p.id)}">Bearbeiten</button><button class="ghost danger" type="button" data-del="${esc(p.id)}">Löschen</button></div>`}
+    </article>`;}).join("");
+}
+
+// ---------- Bearbeiten ----------
+let editing = null, pendingDel = null;
+// Gliederung «1 Serviceleistungen › Standard Services», natürlich sortiert (2 Hausrat vor 10 …)
+const cmp = (a,b) => String(a||"").localeCompare(String(b||""), "de", {numeric:true});
+// KI-Pfade vereinheitlichen: «Hausrat» und «2 Hausrat» sind dieselbe Kategorie (nummerierte Schreibweise gewinnt),
+// und ein letztes Pfadstück, das nur die Leistung selbst wiederholt, fällt weg.
+const segKey = t => t.replace(/^\d+(\.\d+)*\.?\s+/,"").trim().toLowerCase();
+// «1 | Serviceleistungen» → «1 Serviceleistungen» (Spaltentrenner aus dem PDF-Text entfernen)
+// Kapitelnummern wie «1.1» oder «1.1.1» entfernen; die einfache Nummer der Hauptkategorie («1 Serviceleistungen») bleibt
+const cleanName = t => String(t||"").replace(/^(\d+(?:\.\d+)*)\s*\|\s*/,"$1 ").replace(/\s*\|\s*/g," ").replace(/^\d+(?:\.\d+)+\.?\s+/,"").trim();
+const flat = t => cleanName(t).toLowerCase().replace(/[^a-z0-9äöüéèà]/g,"");
+// Die KI schreibt den Namen manchmal nochmals ins Feld «Details» – dann ist es keine zusätzliche Information
+function dedupe(c){
+  if(!c.leistung || !c.bezeichnung) return c;
+  const l = flat(c.leistung), b = flat(c.bezeichnung);
+  if(l === b || b.includes(l)){ const {leistung, ...rest} = c; return rest; }
+  // «Hilfeleistung» + Details «24/7-Hilfeleistung»: der längere Text ist der eigentliche Name
+  if(l.includes(b) && c.leistung.length <= 80){ const {leistung, ...rest} = c; return {...rest, bezeichnung:cleanName(leistung)}; }
+  return c;
+}
+function normPaths(deckungen){
+  // Steht der ganze Pfad in der Bezeichnung («1 Serviceleistungen › Erweiterte Services › Türöffnung»),
+  // wird er in Kategorie + Bezeichnung aufgeteilt
+  deckungen = deckungen.map(c => {
+    const bp = String(c.bezeichnung||"").split(/\s*[›>]\s*/).map(cleanName).filter(Boolean);
+    if(bp.length < 2) return dedupe(c.bezeichnung ? {...c, bezeichnung:cleanName(c.bezeichnung)} : c);
+    const leaf = bp.pop(), kp = String(c.kategorie||"").split(/\s*[›>]\s*/).filter(Boolean);
+    return dedupe({...c, bezeichnung:leaf, kategorie:(bp.length >= kp.length ? bp : kp).join(" › ")});
+  });
+  const split = c => (c.kategorie||"").split(/\s*[›>]\s*/).map(cleanName).filter(Boolean);
+  const paths = deckungen.map(c => {
+    const parts = split(c);
+    // nur Unterebenen kürzen: «Haftpflicht › Haftpflicht» als einzige Kategorie bleibt
+    if(parts.length > 1 && c.bezeichnung && segKey(parts.at(-1)) === segKey(c.bezeichnung)) parts.pop();
+    return parts;
+  });
+  const best = {};  // "hausrat/basisversicherungen hausrat" -> schönste Schreibweise
+  for(const parts of paths) parts.forEach((seg,i) => {
+    const k = parts.slice(0,i+1).map(segKey).join("/");
+    if(!best[k] || (/^\d/.test(seg) && !/^\d/.test(best[k]))) best[k] = seg;
+  });
+  return deckungen.map((c,j) => {
+    const parts = paths[j].map((seg,i) => best[paths[j].slice(0,i+1).map(segKey).join("/")]);
+    const out = {...c}; if(parts.length) out.kategorie = parts.join(" › "); else delete out.kategorie;
+    return out;
+  });
+}
+console.assert((()=>{ const r=normPaths([{bezeichnung:"1 | Serviceleistungen › Erweiterte Services › Türöffnungsservice"}])[0]; return r.kategorie==="1 Serviceleistungen › Erweiterte Services" && r.bezeichnung==="Türöffnungsservice"; })(), "normPaths() Pfad in Bezeichnung");
+console.assert(JSON.stringify(normPaths([{kategorie:"2 Hausrat › Basisversicherungen Hausrat",bezeichnung:"Feuer"},{kategorie:"Hausrat > Basisversicherungen Hausrat > Diebstahl",bezeichnung:"Diebstahl"}]).map(c=>c.kategorie))===JSON.stringify(["2 Hausrat › Basisversicherungen Hausrat","2 Hausrat › Basisversicherungen Hausrat"]), "normPaths()");
+
+function tree(deckungen, prem = {}){
+  const root = {kids:new Map(), items:[]};
+  for(const c of normPaths(deckungen)){
+    let node = root;
+    for(const part of (c.kategorie||"").split(" › ").filter(Boolean)){
+      if(!node.kids.has(part)) node.kids.set(part, {kids:new Map(), items:[]});
+      node = node.kids.get(part);
+    }
+    node.items.push(c);
+  }
+  const draw = n => `<ul class="tree">${n.items.map(c=>`<li><span>${esc(c.bezeichnung || RISKS[c.risiko])}</span><span class="val">${[c.summe?`<span class="num">${chf(c.summe)}</span>`:"", c.sb!=null&&c.sb!==""?`SB <span class="num">${chf(c.sb)}</span>`:"", c.leistung?esc(c.leistung):""].filter(Boolean).join(" · ")}</span></li>`).join("")}${[...n.kids].map(([k,v])=>`<li class="tgrp"><strong>${esc(k)}</strong>${n===root && premOf(k) ? `<span class="tprem">Prämie <span class="num">${chf(premOf(k))}</span>/Jahr · <span class="num">${chf(premOf(k)/12)}</span>/Monat</span>` : ""}${draw(v)}</li>`).join("")}</ul>`;
+  const premOf = k => Object.entries(prem||{}).find(([n]) => segKey(n) === segKey(k))?.[1] || 0;
+  return draw(root);
+}
+console.assert(normPaths([{bezeichnung:"1.1.1 Hilfeleistung",leistung:"24/7-Hilfeleistung"}])[0].bezeichnung==="24/7-Hilfeleistung" && !("leistung" in normPaths([{bezeichnung:"1.1.2 48-h-Schadenzahlung",leistung:"48-h-Schadenzahlung"}])[0]) && normPaths([{bezeichnung:"Ambulant",leistung:"75 %, max. 1'000/Jahr"}])[0].leistung, "dedupe()");
+console.assert(normPaths([{kategorie:"1 Serviceleistungen › 1.1 Standard Services",bezeichnung:"1.1.1 Hilfeleistung"}]).map(c=>c.kategorie+"|"+c.bezeichnung)[0]==="1 Serviceleistungen › Standard Services|Hilfeleistung", "cleanName() Kapitelnummern");
+
+let dragRow = null;
+function covRow(c={}, body = $("#covs .gbody")){
+  const div = document.createElement("div");
+  div.className = "cov";
+  div.innerHTML = `
+    <span class="handle" draggable="true" title="In andere Kategorie ziehen" aria-hidden="true">⋮⋮</span>
+    <label class="c-bez">Leistung / Gefahr<input data-k="bezeichnung" value="${esc(c.bezeichnung??"")}" placeholder="z. B. Feuer"></label>
+    <label>Risiko<select data-k="risiko">${Object.entries(RISKS).map(([k,v])=>`<option value="${k}" ${k===c.risiko?"selected":""}>${v}</option>`).join("")}</select></label>
+    <label>Summe CHF<input data-k="summe" type="number" min="0" inputmode="decimal" value="${c.summe??""}"></label>
+    <label>Selbstbehalt<input data-k="sb" type="number" min="0" inputmode="decimal" value="${c.sb??""}"></label>
+    <label>Details<input data-k="leistung" value="${esc(c.leistung??"")}" placeholder="z. B. 75 %, max. 1'000/Jahr"></label>
+    <button class="ghost danger" type="button" aria-label="Leistung entfernen">✕</button>`;
+  div.querySelector("button").onclick = () => div.remove();
+  const h = div.querySelector(".handle");
+  h.ondragstart = e => { dragRow = div; div.classList.add("dragging"); e.dataTransfer.setDragImage(div, 20, 20); };
+  h.ondragend = () => { div.classList.remove("dragging"); dragRow = null; };
+  body.append(div);
+  return div;
+}
+function groupEl(name, body = $("#covs .gbody")){
+  const g = document.createElement("div");
+  g.className = "grp";
+  const top = body.parentElement?.id === "covs";
+  g.innerHTML = `<div class="ghead"><input class="gname" value="${esc(name)}" aria-label="Kategoriename" placeholder="Kategoriename">
+    ${top ? `<label class="gprem">Prämie CHF/Jahr<input aria-label="Prämie CHF pro Jahr" data-p="y" type="number" min="0" step="0.05" inputmode="decimal"></label>
+    <label class="gprem">CHF/Monat<input data-p="m" type="number" min="0" step="0.05" inputmode="decimal"></label>` : ""}
+    <button class="ghost" type="button" data-a="cov">+ Leistung</button>
+    <button class="ghost" type="button" data-a="sub">+ Unterkategorie</button>
+    <button class="ghost danger" type="button" data-a="del" aria-label="Kategorie entfernen">✕</button></div>
+    <div class="gbody"></div>`;
+  const gb = g.querySelector(".gbody");
+  if(top){
+    const y = g.querySelector('[data-p="y"]'), m = g.querySelector('[data-p="m"]');
+    const r2 = v => Math.round(v*100)/100;
+    y.oninput = () => { m.value = y.value==="" ? "" : r2(+y.value/12); syncTotal(); };
+    m.oninput = () => { y.value = m.value==="" ? "" : r2(+m.value*12); syncTotal(); };
+  }
+  g.querySelector('[data-a="cov"]').onclick = () => covRow({}, gb).querySelector("input").focus();
+  g.querySelector('[data-a="sub"]').onclick = () => groupEl("", gb).querySelector(".gname").focus();
+  g.querySelector('[data-a="del"]').onclick = e => {
+    // Inhalt bleibt erhalten und rutscht eine Ebene nach oben
+    const t = e.currentTarget;
+    if(gb.children.length && t.dataset.sure !== "1"){ t.dataset.sure = "1"; t.textContent = "Auflösen?"; return; }
+    g.replaceWith(...gb.children);
+  };
+  dropTarget(gb);
+  body.append(g);
+  return g;
+}
+function dropTarget(gb){
+  gb.ondragover = e => { if(!dragRow || dragRow.contains(gb)) return; e.preventDefault(); e.stopPropagation(); gb.classList.add("drop-ok"); };
+  gb.ondragleave = () => gb.classList.remove("drop-ok");
+  gb.ondrop = e => {
+    e.preventDefault(); e.stopPropagation(); gb.classList.remove("drop-ok");
+    if(!dragRow) return;
+    // vor die erste Unterkategorie setzen, damit Leistungen oben stehen
+    const firstGrp = [...gb.children].find(x => x.classList.contains("grp"));
+    gb.insertBefore(dragRow, firstGrp || null);
+  };
+}
+// Gruppe für einen Pfad finden oder anlegen
+function ensureGroup(path){
+  let body = $("#covs .gbody");
+  for(const name of path){
+    let g = [...body.children].find(x => x.classList.contains("grp") && segKey(x.querySelector(".gname").value) === segKey(name));
+    if(!g) g = groupEl(name, body);
+    body = g.querySelector(".gbody");
+  }
+  return body;
+}
+function topGroups(){ return [...$("#covs > .gbody").children].filter(x=>x.classList.contains("grp")); }
+function setPrem(g, year){
+  const y = g.querySelector('[data-p="y"]'), m = g.querySelector('[data-p="m"]');
+  if(!y || !year) return;
+  y.value = year; m.value = Math.round(year/12*100)/100;
+}
+// Summe der Kategorieprämien ins Feld «Prämie pro Jahr» übernehmen
+function syncTotal(){
+  const sum = Object.values(collectPrem()).reduce((a,b)=>a+b,0);
+  if(sum > 0) $("#fPraemie").value = Math.round(sum*100)/100;
+}
+function collectPrem(){
+  const out = {};
+  for(const g of topGroups()){
+    const name = g.querySelector(".gname").value.trim(), y = g.querySelector('[data-p="y"]')?.value;
+    if(name && y !== "" && y != null && +y > 0) out[name] = +y;
+  }
+  return out;
+}
+function buildCovs(list, prem = {}){
+  $("#covs").innerHTML = '<div class="gbody"></div>';
+  dropTarget($("#covs .gbody"));
+  const sorted = normPaths(list);  // Reihenfolge wie im Dokument
+  // erst Leistungen ohne Kategorie, dann die Gruppen
+  sorted.filter(c=>!c.kategorie).forEach(c => covRow(c));
+  sorted.filter(c=>c.kategorie).forEach(c => covRow(c, ensureGroup(c.kategorie.split(" › "))));
+  // Prämien den obersten Kategorien zuordnen (Schreibweise wie «Hausrat» = «2 Hausrat»)
+  for(const [name, year] of Object.entries(prem||{})){
+    const g = topGroups().find(x => segKey(x.querySelector(".gname").value) === segKey(name.split(/\s*[›>]\s*/)[0])) || groupEl(name);
+    setPrem(g, year);
+  }
+}
+// Baum im Formular zurück in Deckungen mit Pfad lesen
+function collectCovs(body = $("#covs .gbody"), path = []){
+  return [...body.children].flatMap(el => {
+    if(el.classList.contains("grp")){
+      const name = el.querySelector(".gname").value.trim();
+      return collectCovs(el.querySelector(".gbody"), name ? path.concat(name) : path);
+    }
+    const g = k => el.querySelector(`[data-k="${k}"]`).value;
+    const c = {risiko:g("risiko")};
+    if(g("summe")!=="") c.summe=+g("summe");
+    if(g("sb")!=="") c.sb=+g("sb");
+    if(g("leistung").trim()) c.leistung=g("leistung").trim();
+    if(g("bezeichnung").trim()) c.bezeichnung=g("bezeichnung").trim();
+    if(path.length) c.kategorie = path.join(" › ");
+    return [c];
+  });
+}
+function openEdit(p, note){
+  $("#pdfHints").hidden = true;
+  editing = p || {};
+  $("#editTitle").textContent = p?.id ? "Police bearbeiten" : note ? "Ausgelesene Daten prüfen" : "Police erfassen";
+  $("#editNote").className = "status"; $("#editNote").hidden = !note; $("#editNote").textContent = note || "";
+  $("#fAnbieter").value = editing.anbieter||""; $("#fProdukt").value = editing.produkt||"";
+  $("#fQuelle").value = editing.quelle||"Versicherung"; $("#fPraemie").value = editing.praemie??"";
+  $("#fAblauf").value = editing.ablauf||""; $("#fBeginn").value = editing.beginn||""; $("#fAusgestellt").value = editing.ausgestellt||""; $("#fFrist").value = editing.frist??"";
+  buildCovs(editing.deckungen?.length ? editing.deckungen : [{}], editing.kategoriePraemien);
+  $("#dlgEdit").showModal();
+}
+$("#addCov").onclick = () => covRow().querySelector("input").focus();
+$("#addGrp").onclick = () => groupEl("").querySelector(".gname").focus();
+const svc = (sub, items) => items.map(b => ({kategorie:"1 Serviceleistungen › " + sub, bezeichnung:b, risiko:"andere"}));
+const TEMPLATES = {
+  auto: [
+    {kategorie:"Haftpflicht", bezeichnung:"Haftpflicht", risiko:"fahrzeug", summe:100000000, sb:0},
+    {kategorie:"Haftpflicht", bezeichnung:"Grobfahrlässigkeit", risiko:"fahrzeug"},
+    ...["Diebstahl","Elementar","Feuer","Tier","Glas PLUS","Vandalismus","Marder"].map(b => ({kategorie:"Teilkasko", bezeichnung:b, risiko:"fahrzeug", sb:0})),
+    {kategorie:"Unfall (Fahrzeuginsassen) › Lenker und Mitfahrer", bezeichnung:"Tod", risiko:"insassen", summe:30000},
+    {kategorie:"Unfall (Fahrzeuginsassen) › Lenker und Mitfahrer", bezeichnung:"Invalidität", risiko:"insassen", summe:60000},
+    {kategorie:"Unfall (Fahrzeuginsassen) › Lenker und Mitfahrer", bezeichnung:"Taggeld", risiko:"insassen", summe:25, leistung:"pro Tag"},
+    {kategorie:"Unfall (Fahrzeuginsassen) › Lenker und Mitfahrer", bezeichnung:"Spitaltaggeld", risiko:"insassen", summe:25, leistung:"pro Tag"},
+    {kategorie:"Unfall (Fahrzeuginsassen) › Lenker und Mitfahrer", bezeichnung:"Heilungskosten", risiko:"unfall", leistung:"versichert"},
+    {kategorie:"Pannenhilfe", bezeichnung:"CH/FL", risiko:"pannenhilfe"}
+  ],
+  rechtsschutz: ["Verkehrsteilnehmer","Konsument, Patient, Internet-Nutzer","Arbeitnehmer","Mieter","Fahrzeughalter, -lenker"]
+    .map(b => ({kategorie:"Rechtsschutz › Absicherung bei Rechtsfällen", bezeichnung:b, risiko:"rechtsschutz"})),
+  assistance: [
+    {kategorie:"Assistance › Reisen", bezeichnung:"Annullierungskosten", risiko:"annullierung"},
+    {kategorie:"Assistance › Reisen", bezeichnung:"Personen-Assistance", risiko:"assistance"},
+    {kategorie:"Assistance › Mobilität", bezeichnung:"Motorfahrzeug-Assistance", risiko:"pannenhilfe"}
+  ],
+  haftpflicht: [
+    {kategorie:"Privathaftpflicht › Grundlegende Haftpflichtansprüche", bezeichnung:"Personen-, Sach- und Vermögensschäden", risiko:"haftpflicht"},
+    {kategorie:"Privathaftpflicht › Mobilität", bezeichnung:"Schäden aus der Nutzung fremder Motor- und Wasserfahrzeuge", risiko:"haftpflicht"},
+    {kategorie:"Privathaftpflicht › Mobilität", bezeichnung:"Erweiterte Deckung für Schäden aus der Nutzung fremder Motorfahrzeuge", risiko:"haftpflicht"}
+  ],
+  service: [
+    ...svc("Standard Services", ["24/7-Hilfeleistung","48-h-Schadenzahlung"]),
+    ...svc("Erweiterte Services", ["Beratungsrechtsschutz","Türöffnungsservice","Kartensperrservice","Prämienbefreiung bei Erwerbsunfähigkeit",
+      "Kürzungsverzicht bei Grobfahrlässigkeit","Kosten für psychologische Nachbetreuung","Update-Garantie"])
+      .map(c => c.bezeichnung==="Beratungsrechtsschutz" ? {...c, summe:1000, leistung:"nur Beratung, kein voller Rechtsschutz"} : c),
+    ...svc("Besondere Services", ["Member Helvetia Community","Umzugsset"])
+  ],
+  hausrat: [
+    ...["Feuer","Elementar","Flüssigkeiten und Gase","Diebstahl"].map(b=>({kategorie:"Hausrat › Basisversicherungen Hausrat", bezeichnung:b, risiko:"hausrat"})),
+    ...["Persönlicher Hausrat","Allfällige Folgekosten","Geldwerte"].map(b=>({kategorie:"Hausrat › Basisversicherungen Hausrat › Versicherte Sachen", bezeichnung:b, risiko:"hausrat"}))
+  ]
+};
+$("#tplSel").onchange = e => {
+  const t = TEMPLATES[e.target.value]; e.target.value = "";
+  if(!t) return;
+  // leere Startzeile entfernen, dann Vorlage anhängen
+  document.querySelectorAll("#covs .cov").forEach(r => { if(![...r.querySelectorAll("input")].some(i=>i.value)) r.remove(); });
+  t.forEach(c => covRow(c, c.kategorie ? ensureGroup(c.kategorie.split(" › ")) : undefined));
+};
+$("#editForm").onsubmit = async e => {
+  e.preventDefault();
+  if(!$("#fAnbieter").value.trim()){ $("#fAnbieter").focus(); return; }
+  const num = v => v==="" ? undefined : +v;
+  const p = {
+    id: editing.id || "p" + Date.now().toString(36),
+    anbieter: $("#fAnbieter").value.trim(), produkt: $("#fProdukt").value.trim(),
+    quelle: $("#fQuelle").value, praemie: num($("#fPraemie").value)||0,
+    ablauf: $("#fAblauf").value || "", beginn: $("#fBeginn").value || "", ausgestellt: $("#fAusgestellt").value || "", frist: num($("#fFrist").value)||0,
+    deckungen: collectCovs()
+  };
+  const kp = collectPrem();
+  if(Object.keys(kp).length) p.kategoriePraemien = kp;
+  if(!store){ $("#editNote").hidden=false; $("#editNote").textContent="Speicher lädt noch. Versuch es gleich nochmals."; return; }
+  try {
+    // PDF-Auszug bleibt bei der Police, damit auch spätere Korrekturen über «Bearbeiten» gelernt werden
+    const src = editing._learn || editing.quelltext;
+    if(src) p.quelltext = src.slice(0, 4000);
+    await store.save(p);
+    if(src) learnFrom(p, src);
+    $("#dlgEdit").close();
+  }
+  catch(err){ $("#editNote").hidden=false; $("#editNote").className="status err"; $("#editNote").textContent="Speichern fehlgeschlagen: "+(err.message||err.code); }
+};
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if(!t) return;
+  if(t.dataset.close!==undefined) t.closest("dialog").close();
+  if(t.dataset.forget){ delete examples[t.dataset.forget]; saveExamples(); }
+  if(t.dataset.skip){
+    const id = t.dataset.skip;
+    skipped = skipped.includes(id) ? skipped.filter(x=>x!==id) : skipped.concat(id);
+    try{ localStorage.setItem("skipped", JSON.stringify(skipped)); }catch{}
+    render();
+  }
+  if(t.dataset.edit) openEdit(mine.find(p=>p.id===t.dataset.edit));
+  if(t.dataset.del){
+    if(pendingDel!==t.dataset.del){ pendingDel=t.dataset.del; t.textContent="Wirklich löschen?"; return; }
+    pendingDel=null; await store.remove(t.dataset.del);
+  }
+});
+$("#btnManual").onclick = () => openEdit(null);
+$("#editNote").className = "status";
+
+// ---------- Import ----------
+$("#btnImport").onclick = () => { $("#impStatus").hidden = true; $("#dlgImport").showModal(); };
+const drop = $("#drop");
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); const f=e.dataTransfer.files[0]; if(f) importPdf(f); };
+$("#fileIn").onchange = e => { const f=e.target.files[0]; e.target.value=""; if(f) importPdf(f); };
+
+let progTimer = null, progStart = 0, progCtl = null;
+function prog(pct, txt){
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  $("#prog").hidden = false;
+  $("#progBar").style.width = p + "%";
+  $(".bar").setAttribute("aria-valuenow", p);
+  $("#progPct").textContent = p + " %";
+  if(txt) $("#progTxt").textContent = txt;
+}
+function progBegin(){
+  progStart = Date.now(); progCtl = new AbortController();
+  $("#impStatus").hidden = true; prog(0, "PDF wird gelesen …");
+  clearInterval(progTimer);
+  progTimer = setInterval(() => $("#progTime").textContent = Math.round((Date.now()-progStart)/1000) + " s", 500);
+}
+function progEnd(){ clearInterval(progTimer); progTimer = null; $("#prog").hidden = true; }
+$("#progStop").onclick = () => progCtl?.abort();
+$("#dlgImport").addEventListener("close", () => progCtl?.abort());  // Schliessen bricht die Auswertung ab
+function status(msg, err){ const s=$("#impStatus"); s.hidden=false; s.className="status"+(err?" err":""); s.textContent=msg; }
+
+// PDF-Textstücke nach Zeilenhöhe gruppieren, damit Tabellenzeilen zusammenbleiben (Spalten mit « | » getrennt)
+// PDF-Textstücke nach Zeilenhöhe gruppieren (Tabellenspalten mit « | » getrennt).
+// Zeilen in deutlich grösserer Schrift werden als Überschriften markiert: «# », «## », «### » – so sieht die KI die Gliederung.
+function toLines(items){
+  const rows = [];
+  for(const t of items){
+    if(!t.str.trim()) continue;
+    const y = t.transform[5], x = t.transform[4], h = t.height || Math.abs(t.transform[3]) || 0;
+    let row = rows.find(r => Math.abs(r.y - y) < 3);
+    if(!row) rows.push(row = {y, cells:[], h:0});
+    row.cells.push({x, w:t.width||0, s:t.str});
+    row.h = Math.max(row.h, h);
+  }
+  const sizes = rows.map(r=>r.h).filter(Boolean).sort((a,b)=>a-b);
+  const body = sizes[Math.floor(sizes.length/2)] || 0;              // Median = Fliesstext
+  const headSizes = [...new Set(rows.filter(r=>r.h >= body*1.2).map(r=>Math.round(r.h)))].sort((a,b)=>b-a).slice(0,3);
+  return rows.sort((a,b)=>b.y-a.y).map(r => {
+    r.cells.sort((a,b)=>a.x-b.x);
+    const line = r.cells.reduce((acc,c,i,arr) => {
+      if(!i) return c.s;
+      const gap = c.x - (arr[i-1].x + arr[i-1].w);
+      const numOnly = i === 1 && /^\d+(\.\d+)*$/.test(arr[0].s.trim());
+      return acc + (gap > 12 && !numOnly ? " | " : " ") + c.s;
+    }, "");
+    const lvl = body && r.h >= body*1.2 ? headSizes.indexOf(Math.round(r.h)) + 1 : 0;
+    return lvl > 0 ? "#".repeat(lvl) + " " + line : line;
+  }).join("\n");
+}
+{ const it=(s,y,h)=>({str:s,transform:[h,0,0,h,50,y],width:40,height:h});
+  console.assert(toLines([it("Ihr Versicherungsumfang",800,20),it("Basisversicherungen Hausrat",760,14),it("Feuer",740,10),it("Elementar",725,10),it("Diebstahl",710,10)]).split("\n").join("|")==="# Ihr Versicherungsumfang|## Basisversicherungen Hausrat|Feuer|Elementar|Diebstahl", "toLines() Überschriften"); }
+
+// Texterkennung (OCR) für gescannte PDFs: läuft im Browser, die Bilder verlassen den PC nicht.
+// Programm und deutsches Sprachpaket werden beim ersten Mal aus dem Internet geladen (ca. 15 MB), danach aus dem Browser-Cache.
+const TESSERACT = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+function loadScript(src){
+  return new Promise((ok, fail) => {
+    if([...document.scripts].some(x => x.src === src)) return ok();
+    const el = document.createElement("script"); el.src = src; el.onload = ok;
+    el.onerror = () => fail({message:"Die Texterkennung konnte nicht geladen werden. Beim ersten Mal braucht sie Internet."});
+    document.head.append(el);
+  });
+}
+async function renderPage(doc, i, scale){
+  const page = await doc.getPage(i), vp = page.getViewport({scale});
+  const cv = document.createElement("canvas"); cv.width = vp.width; cv.height = vp.height;
+  await page.render({canvasContext:cv.getContext("2d"), viewport:vp}).promise;
+  return cv;
+}
+async function ocrPages(doc, n, onProgress){
+  await loadScript(TESSERACT);
+  let page = 1;
+  const worker = await window.Tesseract.createWorker("deu", 1, {
+    logger: m => { if(m.status === "recognizing text") onProgress(page, n, m.progress); }
+  });
+  try{
+    let text = "";
+    for(; page <= n; page++){
+      onProgress(page, n, 0);
+      const {data} = await worker.recognize(await renderPage(doc, page, 2.5));
+      // Spalten bleiben sichtbar: viele Leerzeichen → « | » wie beim Text-PDF
+      text += `\n--- Seite ${page} ---\n` + data.text.replace(/[ \t]{3,}/g, " | ") + "\n";
+    }
+    return text;
+  } finally { await worker.terminate(); }
+}
+
+async function pdfText(file, wantImages, onPage = () => {}, onOcr = () => {}){
+  const lib = window.pdfjsLib;
+  if(!lib) throw {message:"Der PDF-Leser ist nicht geladen. Er braucht beim Öffnen der Seite einmal Internet (die PDF-Datei selbst bleibt lokal)."};
+  const doc = await lib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+  let text = "", cut = 0;
+  for(let i=1;i<=Math.min(doc.numPages,20);i++){
+    onPage(i, Math.min(doc.numPages,20));
+    const tc = await (await doc.getPage(i)).getTextContent();
+    const page = toLines(tc.items);
+    // Ab den allgemeinen Bedingungen stehen alle möglichen Deckungen, nicht deine: dort aufhören
+    if(i>1 && /^.{0,40}(allgemeine (versicherungs)?bedingungen|\bAVB\b|zusatzbedingungen|besondere bedingungen)/im.test(page.slice(0,400))){ cut = i; break; }
+    text += page + "\n";
+  }
+  const scanned = text.replace(/\s/g,"").length < 300;
+  const images = [];
+  // Bildmodell: Seiten als Bild mitschicken (bei Scans immer, sonst zur besseren Tabellen-Zuordnung)
+  if(wantImages === "vision"){
+    for(let i=1;i<=Math.min(doc.numPages, scanned ? 4 : 3);i++) images.push((await renderPage(doc, i, 1.6)).toDataURL("image/png").split(",")[1]);
+  }
+  // Gescanntes PDF ohne Bildmodell: Text per OCR erkennen
+  let ocr = false;
+  if(scanned && wantImages !== "vision"){
+    // shortcut: OCR liest höchstens 8 Seiten; Policen-Übersichten stehen fast immer vorne
+    text = await ocrPages(doc, Math.min(doc.numPages, 8), onOcr);
+    ocr = true;
+  }
+  return {text, images, cut, ocr};
+}
+
+// ---------- Lokale KI (Ollama auf diesem PC) ----------
+const OLLAMA = "http://localhost:11434";
+let aiModel = null;
+let aiProvider = null;   // "ollama" | "webllm" | null
+// KI im Browser (WebLLM, WebGPU): Modell wird einmal heruntergeladen und im Browser gespeichert
+const WEBLLM = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm";
+let webEngine = null, webEngineModel = null;
+const hasWebGPU = () => !!navigator.gpu;
+async function webllmEngine(onProgress){
+  const model = $("#webModel").value;
+  if(webEngine && webEngineModel === model) return webEngine;
+  const lib = await import(WEBLLM);
+  if(webEngine){ try{ await webEngine.unload(); }catch{} }
+  webEngine = await lib.CreateMLCEngine(model, {initProgressCallback: r => onProgress(r.progress || 0, r.text || "")}, {context_window_size: 8192});
+  webEngineModel = model;
+  return webEngine;
+}
+function useWebLLM(){
+  aiProvider = "webllm"; aiModel = $("#webModel").selectedOptions[0].textContent.split(" · ")[0] + " (Handy-KI)";
+  $("#aiChip").className = "chip ok";
+  $("#aiChip").textContent = "KI auf diesem Gerät aktiv";
+}
+async function connectAI(){
+  const chip = $("#aiChip");
+  try{
+    const r = await fetch(OLLAMA + "/api/tags", {signal: AbortSignal.timeout(2500)});
+    const models = (await r.json()).models.map(m=>m.name).filter(n=>!/embed/i.test(n));
+    if(!models.length) throw "leer";
+    let saved; try{ saved = localStorage.getItem("aiModel"); }catch{}
+    aiModel = models.includes(saved) ? saved : models[0];
+    await checkVision();
+    $("#aiModel").innerHTML = models.map(n=>`<option ${n===aiModel?"selected":""}>${esc(n)}</option>`).join("");
+    $("#aiModelWrap").hidden = false; $("#webWrap").hidden = true;
+    aiProvider = "ollama";
+    chip.className = "chip ok";
+  }catch{
+    aiModel = null; aiProvider = null; $("#aiModelWrap").hidden = true;
+    // Kein Ollama: KI im Browser anbieten, wenn das Gerät WebGPU kann
+    let webOn = false; try{ webOn = localStorage.getItem("webllm") === "1"; const m = localStorage.getItem("webModel"); if(m) $("#webModel").value = m; }catch{}
+    $("#webWrap").hidden = !hasWebGPU();
+    if(hasWebGPU() && webOn){ useWebLLM(); $("#webLoad").textContent = "Aktiv"; }
+    else {
+      chip.className = "chip warn";
+      chip.textContent = hasWebGPU() ? "KI auf diesem Gerät möglich · einmal laden" : "Keine KI verfügbar · nur Stichwortsuche";
+    }
+  }
+}
+let aiVision = false;
+async function checkVision(){
+  try{
+    const r = await fetch(OLLAMA + "/api/show", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({model:aiModel})});
+    aiVision = ((await r.json()).capabilities||[]).includes("vision");
+  }catch{ aiVision = false; }
+  $("#aiChip").textContent = "Lokale KI verbunden" + (aiVision ? " · liest auch Seitenbilder" : "");
+}
+$("#aiModel").onchange = e => { aiModel = e.target.value; try{ localStorage.setItem("aiModel", aiModel); }catch{} checkVision(); };
+$("#aiRetry").onclick = connectAI;
+$("#webModel").onchange = () => { try{ localStorage.setItem("webModel", $("#webModel").value); }catch{} if(aiProvider === "webllm") useWebLLM(); };
+// Modell vorab laden (grosser Download, nur einmal pro Gerät)
+$("#webLoad").onclick = async () => {
+  const btn = $("#webLoad"); btn.disabled = true;
+  try{
+    await webllmEngine((f, t) => { btn.textContent = `Lädt … ${Math.round(f*100)} %`; });
+    try{ localStorage.setItem("webllm","1"); }catch{}
+    useWebLLM(); btn.textContent = "Aktiv";
+  }catch(e){
+    btn.textContent = "Handy-KI laden";
+    $("#aiChip").className = "chip bad"; $("#aiChip").textContent = "Laden fehlgeschlagen: " + (e.message || e);
+  }finally{ btn.disabled = false; }
+};
+
+const SCHEMA = {type:"object", required:["anbieter","produkt","quelle","praemie","ablauf","frist","deckungen"], properties:{
+  anbieter:{type:"string"}, produkt:{type:"string"},
+  quelle:{type:"string", enum:["Versicherung","Krankenkasse","Bank / Kreditkarte","Arbeitgeber","Andere"]},
+  praemie:{type:"number"}, ablauf:{type:"string"}, beginn:{type:"string"}, ausgestellt:{type:"string"}, frist:{type:"number"},
+  kategorie_praemien:{type:"array", items:{type:"object", required:["kategorie","jahr"], properties:{kategorie:{type:"string"}, jahr:{type:"number"}}}},
+  deckungen:{type:"array", items:{type:"object", required:["bezeichnung","beleg","risiko"], properties:{
+    kategorie:{type:"string"}, bezeichnung:{type:"string"}, beleg:{type:"string"}, risiko:{type:"string", enum:Object.keys(RISKS)}, teilpraemie:{type:["number","null"]}, summe:{type:["number","null"]}, sb:{type:["number","null"]}, leistung:{type:"string"}}}}}};
+
+// ---------- Lernen aus Korrekturen (Few-Shot) ----------
+// Pro Anbieter das zuletzt korrigierte Beispiel: Textauszug + geprüfte Auswertung
+let examples = {};
+try{ examples = JSON.parse(localStorage.getItem("lernbeispiele")||"{}"); }catch{}
+const exKey = name => String(name||"").trim().toLowerCase();
+function saveExamples(){ try{ localStorage.setItem("lernbeispiele", JSON.stringify(examples)); }catch{} renderLearned(); }
+function learnFrom(p, text){
+  if(!p.anbieter || !text) return;
+  const {id, quelltext, ...result} = p;
+  examples[exKey(p.anbieter)] = {anbieter:p.anbieter, text:text.slice(0,4000), result, datum:new Date().toISOString().slice(0,10)};
+  saveExamples();
+}
+// Passendes Beispiel: der gelernte Anbieter, dessen Name am häufigsten im neuen Text vorkommt
+function findExample(text){
+  const t = text.toLowerCase();
+  return Object.values(examples).map(e => ({e, n: t.split(exKey(e.anbieter)).length - 1}))
+    .filter(x => x.n > 0).sort((a,b) => b.n - a.n)[0]?.e || null;
+}
+function renderLearned(){
+  const list = Object.values(examples);
+  $("#learned").innerHTML = list.length ? "Gelernt: " + list.map(e =>
+    `${esc(e.anbieter)} <button class="ghost danger" type="button" data-forget="${esc(exKey(e.anbieter))}" aria-label="${esc(e.anbieter)} vergessen" style="padding:0 4px">✕</button>`).join(" ") : "";
+}
+console.assert((()=>{ const keep=examples; examples={css:{anbieter:"CSS"},axa:{anbieter:"AXA"}}; const r=findExample("Police der CSS Kranken-Versicherung, CSS")?.anbieter; examples=keep; return r==="CSS"; })(), "findExample()");
+
+const PROMPT = `Du liest eine Schweizer Versicherungspolice, einen Versicherungsausweis oder Bedingungen einer Bank-/Kreditkartenversicherung.
+Antworte nur mit JSON nach dem vorgegebenen Schema.
+Felder: anbieter (Firmenname), produkt (Produktname), quelle, praemie (CHF pro Jahr, Total aller Teilprämien; Monatsprämien ×12; 0 wenn unbekannt),
+beginn (Versicherungsbeginn / «Beginn» / «gültig ab», YYYY-MM-DD; leer wenn unbekannt),
+ausgestellt (Datum des Dokuments: «Police vom», «Ausstellungsdatum», Ort und Datum oben im Brief, YYYY-MM-DD; leer wenn unbekannt),
+ablauf (Vertragsende YYYY-MM-DD; Krankenkassen laufen bis 31.12. des Jahres; leer wenn unbekannt), frist (Kündigungsfrist in Monaten; Grundversicherung 1; 0 wenn unbekannt),
+deckungen: NUR was in DIESEM Vertrag versichert ist, typischerweise in der Policen-Übersicht mit Prämie oder Häkchen.
+NICHT aufnehmen: Produkte, die nur beschrieben, angeboten, ausgeschlossen, «nicht versichert», «sistiert» oder in Bedingungen allgemein erklärt werden.
+Gehe die Übersicht Zeile für Zeile durch und lasse keine versicherte Zeile aus. Pro Deckung:
+- kategorie = übergeordnete Gliederung genau wie im Dokument, inklusive Nummerierung, Ebenen mit « › » getrennt,
+  z. B. «1 Serviceleistungen › Standard Services». Nur die oberste Kategorie behält ihre Nummer, Unterkategorien OHNE Kapitelnummer wie «1.1». Leer, wenn das Dokument keine Gliederung hat.
+  Verwende für dieselbe Kategorie immer exakt dieselbe Schreibweise (inkl. Nummer), und wiederhole die Leistung selbst NICHT in der kategorie.
+- bezeichnung = unterste Ebene, Name der Leistung wie im Dokument, aber OHNE Kapitelnummer, z. B. «Hilfeleistung» oder «Spital Halbprivat».
+Nimm auch Service- und Assistance-Leistungen auf, wenn sie im Vertrag enthalten sind (Risiko «andere», wenn nichts passt).
+Typischer Aufbau einer Sachversicherung (z. B. Hausrat) – erfasse BEIDES als eigene Deckungen:
+- Versicherte Gefahren (z. B. Feuer, Elementar, Flüssigkeiten und Gase, Diebstahl): je eine Deckung mit sb = Selbstbehalt, kategorie = Abschnittstitel, z. B. «Basisversicherungen Hausrat».
+- Versicherte Sachen/Positionen (oft als Aufzählung, z. B. persönlicher Hausrat, Folgekosten, Geldwerte): je eine Deckung mit summe = Versicherungssumme, kategorie = «<Abschnittstitel> › Versicherte Sachen».
+- Erweiterungen (z. B. all risks, einfacher Diebstahl auswärts) und weitere Abschnitte (z. B. «Digitale Aktivitäten» › Cyber) mit eigenem Abschnittstitel als kategorie.
+Beträge und Selbstbehalte stehen oft in einer separaten Tabelle weiter hinten: ordne sie über den Namen der Gefahr bzw. Position zu.
+Zuordnung der Risiko-Schlüssel: Gefahren und Sachen der Hausrat = hausrat; einfacher Diebstahl auswärts = diebstahl; Glasbruch = glas; Cyber = cyber.
+- beleg = wörtlich kopierter Textausschnitt (5–15 Wörter) aus dem Dokument, der zeigt, dass diese Deckung versichert ist. Nichts erfinden.
+- teilpraemie = Prämie für diese Deckung (CHF pro Monat oder Jahr, wie im Dokument). Das ist KEINE Summe.
+- summe = maximale Versicherungsleistung in CHF (z. B. «Versicherungssumme», «max. CHF ... pro Jahr»), sonst null. Niemals eine Prämie hier eintragen.
+- sb = Selbstbehalt oder Franchise in CHF, sonst null.
+- leistung = kurze Leistungsbeschreibung so wie im Dokument, z. B. «75 %, max. 1'000/Jahr» oder «halbprivat, ganze Schweiz»; leer wenn unbekannt.
+Bei Zusatzversicherungen gibt es oft keine einzelne Versicherungssumme: dann summe = null und die Leistung in leistung beschreiben.
+Tabellenspalten im Text sind mit « | » getrennt; Werte gehören zur Spaltenüberschrift darüber.
+kategorie_praemien: Prämie pro OBERSTER Kategorie (gleicher Name wie der erste Teil von kategorie), in CHF pro Jahr; Monatsprämien ×12. Nur aufnehmen, wenn im Dokument eine Prämie für diesen Bereich steht.
+Nummerierte Abschnitts-Banner wie «1 Serviceleistungen» oder «2 Hausrat» sind OBERSTE Kategorien; eine darin genannte «Jahresprämie» gehört in kategorie_praemien.
+Zwischenüberschriften darunter (z. B. «Standard Services», «Erweiterte Services», «Basisversicherungen Hausrat») sind Unterkategorien.
+Erklärende Sätze unter einer Überschrift (z. B. «Helvetia garantiert Ihnen …») sind KEINE Leistungen; nur die einzelnen Zeilen darunter.
+Bei der Privathaftpflicht: die Versicherungssumme (z. B. CHF 5 Mio.) gehört als summe zu «Personen-, Sach- und Vermögensschäden»; Leistungen unter «Mobilität» (fremde Fahrzeuge) sind risiko = haftpflicht.
+Tabellen mit Spalte «Versichert» (Ja/Nein), z. B. Autoversicherung: Zeilen mit «Nein» NICHT aufnehmen.
+Fett gedruckte Abschnittszeilen (z. B. «Haftpflicht», «Teilkasko», «Unfall (Fahrzeuginsassen)», «Pannenhilfe») sind OBERSTE Kategorien;
+der Betrag in der Zeile «Zwischentotal» darunter gehört in kategorie_praemien dieser Kategorie, die «Jahresprämie» am Schluss in praemie.
+Spalten «Selbstbehalt» → sb («0/0» bedeutet 0), «Versicherungssumme» → summe; steht dort nur «versichert», summe = null.
+Autoversicherung: Haftpflicht, Kasko und Teilkasko = fahrzeug; Pannenhilfe = pannenhilfe; Insassenunfall: Heilungskosten = unfall, Tod/Invalidität/Taggelder = insassen.
+Bei Assistance: Annullierungskosten = annullierung, Personen-Assistance = assistance, Motorfahrzeug-Assistance/Pannenhilfe = pannenhilfe (NICHT fahrzeug, das ist die Motorfahrzeugversicherung).
+Ein Beratungsrechtsschutz innerhalb von Serviceleistungen ist KEIN voller Rechtsschutz: risiko = andere.
+Überschriften sind im Text mit «# », «## » oder «### » markiert (grössere Schrift = weniger #).
+- kategorie = Pfad der Überschriften über der Leistung, ohne Dokumenttitel wie «Ihr Versicherungsumfang», «Deckungen und Leistungen».
+- JEDE Zeile und JEDER Aufzählungspunkt unter einer Überschrift ist eine EIGENE Deckung.
+  Fasse NIE mehrere Leistungen in einer Deckung zusammen (falsch: bezeichnung «Feuer, Elementar, Diebstahl»; richtig: drei Deckungen).
+Risiko-Schlüssel: ${Object.entries(RISKS).map(([k,v])=>k+" = "+v).join("; ")}.
+Grundversicherung KVG = krankheit; Unfall nur aufnehmen, wenn er eingeschlossen und nicht sistiert ist.`;
+
+const norm = t => String(t||"").toLowerCase().replace(/[|«»"'’\s]/g,"");
+// Fasst die KI mehrere Leistungen in eine zusammen («Feuer, Elementar, Diebstahl»), wird sie wieder aufgeteilt.
+// Beträge bleiben bei allen Teilen, weil sie in solchen Aufzählungen meist für alle gelten.
+function splitMerged(list, text = ""){
+  const t = norm(text);
+  return list.flatMap(c => {
+    // steht die Bezeichnung genau so im PDF (z. B. «Konsument, Patient, Internet-Nutzer»), ist es eine echte Leistung
+    if(t && norm(c.bezeichnung).length >= 3 && t.includes(norm(c.bezeichnung))) return [c];
+    const parts = String(c.bezeichnung||"").split(/\s*(?:(?<!-),|[;•\n]|\s-\s)\s*/).map(x=>x.trim()).filter(x=>x.length>=3);
+    if(parts.length < 2) return [c];
+    return parts.map(b => ({...c, bezeichnung:b, beleg:b}));
+  });
+}
+console.assert(splitMerged([{bezeichnung:"Feuer, Elementar, Flüssigkeiten und Gase, Diebstahl",risiko:"hausrat",sb:200}]).map(c=>c.bezeichnung).join("|")==="Feuer|Elementar|Flüssigkeiten und Gase|Diebstahl", "splitMerged()");
+console.assert(splitMerged([{bezeichnung:"Personen-, Sach- und Vermögensschäden"}]).length===1, "splitMerged() Bindestrich");
+console.assert(splitMerged([{bezeichnung:"Konsument, Patient, Internet-Nutzer"}], "§ Konsument, Patient, Internet-Nutzer\n").length===1, "splitMerged() wörtlich im PDF");
+
+// Beleg gilt, wenn ein längeres Stück davon (24 Zeichen, ohne Leerzeichen) im Text vorkommt
+function belegOk(beleg, text){
+  const b = norm(beleg), t = norm(text);
+  if(b.length < 3) return false;  // kurze Belege (z. B. «Feuer») zählen, wenn sie exakt vorkommen
+  if(b.length <= 24) return t.includes(b);
+  for(let i=0; i+24<=b.length; i+=6) if(t.includes(b.slice(i,i+24))) return true;
+  return false;
+}
+console.assert(belegOk("Spital  Halbprivat | CHF 45.60 mtl. versichert", "xx Spital Halbprivat | CHF 45.60 mtl. versichert yy") && !belegOk("Rechtsschutz Privat versichert", "Spital Halbprivat"), "belegOk()");
+
+async function askAI(text, images, onProgress = () => {}, signal, example){
+  const hasText = text.replace(/\s/g,"").length >= 100;
+  const shot = example ? `\n\nBEISPIEL: So wurde eine frühere Police von ${example.anbieter} korrekt ausgewertet (vom Nutzer geprüft).
+Übernimm daraus, wo die Angaben im Dokument stehen und wie die Deckungen zugeordnet werden. Die Zahlen gelten nur für das Beispiel; lies die aktuellen Werte aus dem neuen Dokument.
+Textauszug des Beispiels:\n${example.text}\nKorrekte Auswertung des Beispiels:\n${JSON.stringify(example.result)}\nENDE DES BEISPIELS.` : "";
+  const web = aiProvider === "webllm";
+  const msg = {role:"user", content: PROMPT + (web ? shot.slice(0, 2500) : shot) + (images.length ? "\n\nDie ersten Seiten sind als Bild angehängt; nutze sie, um Tabellen richtig zuzuordnen." : "") + (hasText ? "\n\nPolicentext:\n" + text.slice(0, web ? 9000 : 60000) : "")};
+  if(images.length) msg.images = images;
+  // shortcut: Handy-KI liest nur die ersten ~9'000 Zeichen (Kontext 8k Tokens); reicht für die Policen-Übersicht
+  const out = web ? await askWebLLM(msg.content, onProgress, signal) : await askOllama(msg, onProgress, signal);
+  return finishAI(out, text, hasText);
+}
+async function askOllama(msg, onProgress, signal){
+  const r = await fetch(OLLAMA + "/api/chat", {method:"POST", headers:{"Content-Type":"application/json"}, signal,
+    body: JSON.stringify({model:aiModel, messages:[msg], stream:true, think:false, format:SCHEMA, options:{temperature:0, num_ctx:32768}})});
+  // Ollama streamt eine JSON-Zeile pro Token-Häppchen
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = "", out = "";
+  for(;;){
+    const {value, done} = await reader.read();
+    if(done) break;
+    buf += dec.decode(value, {stream:true});
+    const lines = buf.split("\n"); buf = lines.pop();
+    for(const line of lines){
+      if(!line.trim()) continue;
+      const j = JSON.parse(line);
+      if(j.error) throw {message:"Ollama: " + j.error};
+      out += j.message?.content || "";
+      onProgress(out);
+    }
+  }
+  return out;
+}
+// JSON-Schema für WebLLM: «number oder null» als anyOf, das versteht dessen Grammatik-Engine sicher
+const webSchema = () => JSON.stringify(SCHEMA, (k, v) => Array.isArray(v) && k === "type" ? undefined : v)
+  .replace(/"teilpraemie":\{\}|"summe":\{\}|"sb":\{\}/g, m => m.replace("{}", '{"anyOf":[{"type":"number"},{"type":"null"}]}'));
+async function askWebLLM(content, onProgress, signal){
+  const engine = await webllmEngine((f, t) => prog(15 + f*20, "Handy-KI wird geladen … " + Math.round(f*100) + " %"));
+  const req = {messages:[{role:"user", content}], stream:true, temperature:0, max_tokens:2500, extra_body:{enable_thinking:false}};
+  let stream;
+  try{ stream = await engine.chat.completions.create({...req, response_format:{type:"json_object", schema: webSchema()}}); }
+  catch{ stream = await engine.chat.completions.create({...req, response_format:{type:"json_object"}}); }
+  let out = "";
+  for await (const chunk of stream){
+    if(signal?.aborted){ engine.interruptGenerate(); throw {name:"AbortError"}; }
+    out += chunk.choices[0]?.delta?.content || "";
+    onProgress(out);
+  }
+  return out;
+}
+function finishAI(out, text, hasText){
+  const d = JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1));
+  const all = splitMerged((d.deckungen||[]).filter(c=>RISKS[c.risiko]), text);
+  // Nur Deckungen behalten, deren Beleg wirklich im PDF steht (filtert erfundene Einträge)
+  const keep = hasText ? all.filter(c => belegOk(c.beleg, text)) : all;
+  d.verworfen = all.filter(c => !keep.includes(c)).map(c => c.bezeichnung || RISKS[c.risiko]);
+  d.deckungen = normPaths(keep).map(c=>({risiko:c.risiko, ...(c.kategorie?{kategorie:String(c.kategorie)}:{}), ...(c.bezeichnung?{bezeichnung:String(c.bezeichnung)}:{}), ...(c.summe?{summe:+c.summe}:{}), ...(c.sb!=null&&c.sb!==""?{sb:+c.sb}:{}), ...(c.leistung?{leistung:String(c.leistung)}:{})}));
+  for(const k of ["ablauf","beginn","ausgestellt"]) if(!/^\d{4}-\d{2}-\d{2}$/.test(d[k]||"")) d[k] = "";
+  d.kategoriePraemien = Object.fromEntries((d.kategorie_praemien||[]).filter(k=>k.kategorie && +k.jahr>0).map(k=>[String(k.kategorie).split(/\s*[›>]\s*/)[0], +k.jahr]));
+  delete d.kategorie_praemien;
+  return d;
+}
+
+// shortcut: Stichwortsuche statt KI, erkennt nur Deckungsarten und Anbieter; Werte prüft der Nutzer
+const KEYS = {
+  krankheit:/grundversicherung|\bKVG\b|obligatorische krankenpflege/i, unfall:/unfall/i, spital:/spital|hospital/i,
+  ambulant:/ambulant|komplementärmedizin|alternativmedizin/i, cyber:/\bcyber/i, insassen:/insassen/i, pannenhilfe:/pannenhilfe|fahrzeug-assistance|schutzbrief/i, ausland:/heilungskosten im ausland|reisekrankenversicherung|notfälle im ausland/i,
+  erwerb:/taggeld|erwerbsunfähig/i, leben:/todesfall|lebensversicherung/i, haftpflicht:/haftpflicht/i, hausrat:/hausrat/i,
+  diebstahl:/diebstahl auswärts|einfacher diebstahl/i, glas:/glasbruch/i, geraete:/geräteschutz|handyversicherung|smartphone/i,
+  annullierung:/annullierung/i, assistance:/assistance|rücktransport|repatriierung|personenassistance/i, gepaeck:/reisegepäck|gepäckversicherung/i,
+  rechtsschutz:/rechtsschutz/i, fahrzeug:/motorfahrzeug|kasko/i
+};
+const PROVIDERS = ["AXA","Helvetia","Mobiliar","Zurich","Allianz","Generali","Baloise","Vaudoise","Smile","Simpego","CSS","Helsana","Swica","Sanitas","Visana","Concordia","Groupe Mutuel","Assura","KPT","Atupri","ÖKK","Sympany","EGK","TCS","Europäische Reiseversicherung","ERV","UBS","Credit Suisse","PostFinance","Raiffeisen","Cembra","Swisscard","Viseca","Cornèr","Coop","Migros"];
+const KK = /CSS|Helsana|Swica|Sanitas|Visana|Concordia|Groupe Mutuel|Assura|KPT|Atupri|ÖKK|Sympany|EGK/;
+const BANK = /UBS|Credit Suisse|PostFinance|Raiffeisen|Cembra|Swisscard|Viseca|Cornèr/;
+
+const amt = v => +v.replace(/['’ ]/g,"").replace(",",".");
+const isoDate = m => `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+
+function findPremium(text){
+  // Tabellen werden oft zerrissen: Betrag kann bis ~120 Zeichen nach dem Begriff stehen
+  const money = "(?:CHF|Fr\\.)?\\s*([0-9]{1,3}(?:['’ ]?[0-9]{3})*[.,][0-9]{2})";
+  // shortcut: nimmt nur den ersten Betrag; mehrere Teilprämien muss man selbst addieren
+  const monthly = text.match(new RegExp("(monatsprämie|prämie pro monat|monatliche prämie|prämie monatlich|total pro monat|zu bezahlen pro monat)[^]{0,120}?" + money, "i"));
+  if(monthly) return Math.round(amt(monthly[2]) * 12 * 100) / 100;
+  const yearly = text.match(new RegExp("(jahresprämie|prämie pro jahr|jährliche prämie|total prämie|prämie total|gesamtprämie)[^]{0,120}?" + money, "i"));
+  if(yearly) return amt(yearly[2]);
+  const any = text.match(new RegExp("prämie[^]{0,120}?" + money, "i"));
+  return any ? amt(any[1]) : "";
+}
+
+function detect(text){
+  const counts = PROVIDERS.map(n=>[n,(text.match(new RegExp("\\b"+n+"\\b","g"))||[]).length]).filter(x=>x[1]).sort((x,y)=>y[1]-x[1]);
+  const anbieter = counts[0]?.[0] || "";
+  const quelle = KK.test(anbieter) ? "Krankenkasse" : BANK.test(anbieter) ? "Bank / Kreditkarte" : "Versicherung";
+  const deckungen = Object.keys(KEYS).filter(k=>KEYS[k].test(text)).map(risiko=>({risiko}));
+  const D = "(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})";
+  const end = text.match(new RegExp("(ablauf|vertragsende|gültig bis|läuft bis|dauer bis|endet am|bis)\\D{0,40}" + D, "i"));
+  const start = text.match(new RegExp("(gültig ab|versicherungsbeginn|beginn|ab)\\D{0,40}" + D, "i"));
+  let ablauf = end ? isoDate(end.slice(1)) : "";
+  // Krankenkassen laufen pro Kalenderjahr: aus «gültig ab» das Jahresende ableiten
+  if(!ablauf && quelle==="Krankenkasse" && start) ablauf = `${start[4]}-12-31`;
+  const f = text.match(/(\d{1,2})\s*monate?\D{0,60}(vor ablauf|kündigung)|kündigungsfrist\D{0,30}(\d{1,2})\s*monat/i);
+  let frist = f ? +(f[1]||f[3]) : "";
+  if(frist==="" && quelle==="Krankenkasse") frist = deckungen.some(c=>c.risiko==="krankheit") ? 1 : 3;
+  return {anbieter, produkt:"", quelle, praemie:findPremium(text), ablauf, beginn: start ? isoDate(start.slice(1)) : "", frist, deckungen};
+}
+
+// Zeilen mit Zahlen rund um Prämie/Datum, damit man sieht, was im PDF steht
+function hints(text){
+  return text.split("\n").flatMap(l => l.match(/.{0,60}(prämie|total|chf|fr\.|gültig|ablauf|beginn|kündig).{0,80}/gi) || [])
+    .filter(l => /\d/.test(l)).slice(0, 25);
+}
+console.assert(findPremium("Monatsprämie Total CHF 123.40") === 1480.8, "Monatsprämie ×12");
+console.assert(detect("CSS Grundversicherung KVG gültig ab 01.01.2026").ablauf === "2026-12-31", "KK Jahresende");
+
+async function importPdf(file){
+  try{
+    progBegin();
+    const {text, images, cut, ocr} = await pdfText(file, aiProvider === "ollama" && aiVision ? "vision" : false,
+      (i, n) => prog(i / n * 5, `PDF wird gelesen … Seite ${i} von ${n}`),
+      (i, n, f) => prog(5 + ((i - 1 + f) / n) * 10, `Gescanntes PDF: Texterkennung Seite ${i} von ${n} …`));
+    const hasText = text.replace(/\s/g,"").length >= 100;
+    if(!hasText && !images.length){ progEnd(); status("Auch die Texterkennung hat in diesem PDF keinen Text gefunden. Bitte manuell erfassen oder ein Bildmodell wie qwen2.5vl verwenden.", true); return; }
+    let data, note;
+    if(aiProvider){
+      // Phase 1 (15–40 %): Modell lädt und liest den Text, Ollama meldet dabei nichts → langsam annähern
+      let pct = 15, writing = false;
+      const wait = setInterval(() => { if(!writing){ pct += (40 - pct) * 0.04; prog(pct, `${aiModel} liest das Dokument …`); } }, 400);
+      // Phase 2 (40–98 %): Antwort entsteht; Länge relativ zu einer typischen Antwort (~2500 Zeichen)
+      const expected = Math.max(2500, text.length * 0.05);
+      const example = findExample(text);
+      try{
+        data = await askAI(text, images, out => {
+          writing = true;
+          prog(40 + Math.min(58, out.length / expected * 58), `${aiModel} schreibt die Auswertung …`);
+        }, progCtl.signal, example);
+      } finally { clearInterval(wait); }
+      prog(100, "Fertig");
+      data._learn = text;
+      note = `Aus «${file.name}» von der ${aiProvider === "webllm" ? "KI auf diesem Gerät" : "lokalen KI"} ausgelesen. Nichts hat dein Gerät verlassen. Bitte kurz prüfen, dann speichern.`
+        + (example ? ` Mit Lernbeispiel von ${example.anbieter} (${new Date(example.datum).toLocaleDateString("de-CH")}).` : " Deine Korrekturen werden beim Speichern für diesen Anbieter gelernt.")
+        + (ocr ? " Das PDF war gescannt: Der Text wurde per Texterkennung gelesen, Zahlen bitte besonders genau prüfen." : "")
+        + (cut ? ` Ab Seite ${cut} (allgemeine Bedingungen) wurde nicht mehr gelesen.` : "")
+        + (data.verworfen.length ? ` Verworfen, weil kein Beleg im PDF stand: ${data.verworfen.join(", ")}.` : "");
+    } else {
+      data = detect(text);
+      note = `Aus «${file.name}» erkannt (Stichwortsuche, lokal). Erkannte Deckungsarten können falsch sein, z. B. wenn «Unfall» nur als Ausschluss vorkommt. Bitte prüfen, Summen ergänzen, dann speichern.`;
+    }
+    progEnd();
+    $("#dlgImport").close();
+    openEdit(data, note);
+    const h = hints(text);
+    $("#pdfHints").hidden = !h.length;
+    $("#pdfHints").querySelector("pre").textContent = h.join("\n");
+  }catch(e){
+    progEnd();
+    status(e.name === "AbortError" ? "Auswertung abgebrochen." : "Das hat nicht geklappt: " + (e.message || e), e.name !== "AbortError");
+  }
+}
+
+// ---------- Sichern / Wiederherstellen ----------
+$("#btnExport").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({policen:mine, lernbeispiele:examples, ausgeblendet:skipped},null,2)],{type:"application/json"}));
+  a.download = "policen-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$("#restoreIn").onchange = async e => {
+  const f = e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    const data = JSON.parse(await f.text());
+    const pol = Array.isArray(data) ? data : data.policen;
+    if(!Array.isArray(pol)) throw 0;
+    pol.filter(p=>p && p.id && p.anbieter).forEach(p=>store.save(p));
+    if(data.lernbeispiele){ Object.assign(examples, data.lernbeispiele); saveExamples(); }
+    if(Array.isArray(data.ausgeblendet)){ skipped = [...new Set(skipped.concat(data.ausgeblendet))]; try{ localStorage.setItem("skipped", JSON.stringify(skipped)); }catch{} render(); }
+  }catch{ $("#banner").hidden=false; $("#banner").textContent="Die Datei ist keine gültige Policen-Sicherung."; }
+};
+
+// ---------- Speicher ----------
+function localStore(){
+  try{ mine = JSON.parse(localStorage.getItem("policen")||"[]"); }catch{ mine=[]; }
+  const persist = () => { try{ localStorage.setItem("policen", JSON.stringify(mine)); }catch{} render(); };
+  return {local:true,
+    save:p => { mine = mine.filter(x=>x.id!==p.id).concat(p); persist(); },
+    remove:id => { mine = mine.filter(x=>x.id!==id); persist(); }};
+}
+
+store = localStore();
+render();
+// Darstellung: Automatisch → Hell → Dunkel
+const THEMES = {
+  system:{label:"Automatisch", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor"/></svg>'},
+  light:{label:"Hell", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></g></svg>'},
+  dark:{label:"Dunkel", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="currentColor"/></svg>'}
+};
+function showTheme(){
+  const t = document.documentElement.dataset.theme || "system";
+  $("#themeBtn").innerHTML = THEMES[t].icon + THEMES[t].label;
+  $("#themeBtn").setAttribute("aria-label", "Darstellung: " + THEMES[t].label + ". Klicken zum Wechseln");
+}
+$("#themeBtn").onclick = () => {
+  const order = ["system","light","dark"], cur = document.documentElement.dataset.theme || "system";
+  const next = order[(order.indexOf(cur)+1) % 3];
+  if(next === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
+  try{ localStorage.setItem("theme", next); }catch{}
+  showTheme();
+};
+showTheme();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+$("#navImport").onclick = () => $("#btnImport").click();
+// Aktiven Abschnitt in der Leiste markieren
+try{
+  const links = [...document.querySelectorAll("[data-nav]")];
+  const io = new IntersectionObserver(entries => {
+    const vis = entries.filter(e => e.isIntersecting).sort((x,y) => x.boundingClientRect.top - y.boundingClientRect.top)[0];
+    if(vis) links.forEach(l => l.classList.toggle("active", l.dataset.nav === vis.target.id));
+  }, {rootMargin:"-90px 0px -55% 0px"});
+  links.forEach(l => { const t = document.getElementById(l.dataset.nav); if(t) io.observe(t); });
+}catch{}
+connectAI();
+renderLearned();
+</script>
